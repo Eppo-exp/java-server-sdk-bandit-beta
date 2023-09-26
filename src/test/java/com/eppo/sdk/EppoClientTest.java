@@ -2,10 +2,7 @@ package com.eppo.sdk;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -30,8 +27,10 @@ import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 
 import lombok.Data;
+import org.mockito.ArgumentCaptor;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(WireMockExtension.class)
 public class EppoClientTest {
@@ -39,7 +38,6 @@ public class EppoClientTest {
   private static final int TEST_PORT = 4001;
 
   private WireMockServer mockServer;
-
   private static ObjectMapper MAPPER = new ObjectMapper();
   static {
     MAPPER.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -123,12 +121,7 @@ public class EppoClientTest {
     EppoClientConfig config = EppoClientConfig.builder()
         .apiKey("mock-api-key")
         .baseURL("http://localhost:4001")
-        .assignmentLogger(new IAssignmentLogger() {
-          @Override
-          public void logAssignment(AssignmentLogData logData) {
-            // Auto-generated method stub
-          }
-        })
+        .assignmentLogger(mock())
         .build();
     EppoClient.init(config);
   }
@@ -271,17 +264,12 @@ public class EppoClientTest {
       WireMock.get(WireMock.urlMatching(".*randomized_assignment.*")).willReturn(WireMock.okJson(racResponseJson))
     );
 
-    // Re-initialize client with our bandit RAC
+    // Re-initialize client with our bandit RAC and a mock logger we can spy on
+    IAssignmentLogger mockLogger = mock();
     EppoClientConfig config = EppoClientConfig.builder()
       .apiKey("mock-api-key")
       .baseURL("http://localhost:4001")
-      .assignmentLogger(new IAssignmentLogger() {
-        @Override
-        public void logAssignment(AssignmentLogData logData) {
-          /* no-op */
-          // TODO: spy on logged assignment
-        }
-      })
+      .assignmentLogger(mockLogger)
       .build();
     EppoClient.init(config);
 
@@ -298,6 +286,17 @@ public class EppoClientTest {
     assertFalse(stringAssignment.isEmpty());
     assertTrue(banditActions.contains(stringAssignment.get()));
 
-    // TODO: mock logger inspect what was logged
+    ArgumentCaptor<AssignmentLogData> argumentCaptor = ArgumentCaptor.forClass(AssignmentLogData.class);
+    verify(mockLogger, times(1)).logAssignment(argumentCaptor.capture());
+    AssignmentLogData capturedArgument = argumentCaptor.getValue();
+    assertEquals("test_bandit_1-bandit", capturedArgument.experiment);
+    assertEquals("test_bandit_1", capturedArgument.featureFlag);
+    assertEquals("bandit", capturedArgument.allocation);
+    assertEquals("random 0.1", capturedArgument.assignmentModelVersion);
+    assertEquals("option1", capturedArgument.variation);
+    assertEquals(0.3333, capturedArgument.variationProbability, 0.0002);
+    assertEquals(Map.of(), capturedArgument.variationAttributes);
+    assertEquals("subject1", capturedArgument.subject);
+    assertEquals(Map.of(), capturedArgument.subjectAttributes);
   }
 }

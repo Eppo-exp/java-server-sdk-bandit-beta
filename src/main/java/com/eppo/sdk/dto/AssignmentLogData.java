@@ -31,8 +31,11 @@ public class AssignmentLogData {
     ) {
         this.experiment = experiment;
         this.featureFlag = featureFlag;
+        this.assignmentModelVersion = assignmentModelVersion;
         this.allocation = allocation;
         this.variation = variation;
+        this.variationProbability = variationProbability;
+        this.variationAttributes = variationAttributes;
         this.timestamp = new Date();
         this.subject = subject;
         this.subjectAttributes = subjectAttributes;

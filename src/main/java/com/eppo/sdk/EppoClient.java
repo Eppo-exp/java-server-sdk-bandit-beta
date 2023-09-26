@@ -155,7 +155,7 @@ public class EppoClient {
                             subjectKey,
                             subjectAttributes));
         } catch (Exception e) {
-            // Ignore Exception
+            log.warn("Error logging assignment", e);
         }
         return Optional.of(assignedVariation.getTypedValue());
     }
