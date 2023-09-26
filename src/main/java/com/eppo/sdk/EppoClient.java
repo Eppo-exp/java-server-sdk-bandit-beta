@@ -93,7 +93,7 @@ public class EppoClient {
             allocationKey = "bandit";
             variations = BanditEvaluator.evaluateBanditVariations(
               flagKey,
-              "random",
+              "random", // Hard-coded placeholder for now
               assignmentOptions,
               subjectKey,
               subjectAttributes,

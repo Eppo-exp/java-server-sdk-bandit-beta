@@ -27,8 +27,8 @@ public class BanditEvaluator {
       int subjectShards
     ) {
         BanditModel model = BanditModelFactory.build(modelName);
-        List<String> shuffledActions = shuffleVariations(actions.keySet(), banditKey, subjectKey);
         Map<String, Float> actionWeights = model.weighActions(actions, subjectAttributes);
+        List<String> shuffledActions = shuffleVariations(actions.keySet(), banditKey, subjectKey);
         return generateVariations(shuffledActions, actionWeights, subjectShards);
     }
 
