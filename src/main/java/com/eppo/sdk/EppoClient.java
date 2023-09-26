@@ -87,13 +87,26 @@ public class EppoClient {
             return Optional.empty();
         }
 
-        String allocationKey;
+        // Used to assign
         List<Variation> variations;
+
+        // Used for logging
+        String assignmentModelVersion = "sharding v1";
+        String allocationKey;
+        EppoAttributes assignmentAttributes = null;
+
         if (configuration.isBandit()) {
             allocationKey = "bandit";
+
+            // Properties of the bandit model are hardcoded for now
+            String modelName = "random";
+            String modelVersion = "0.1";
+
+            assignmentModelVersion = modelName+" "+modelVersion;
+
             variations = BanditEvaluator.evaluateBanditVariations(
               flagKey,
-              "random", // Hard-coded placeholder for now
+              modelName,
               assignmentOptions,
               subjectKey,
               subjectAttributes,
@@ -121,6 +134,12 @@ public class EppoClient {
 
         // Get assigned variation
         Variation assignedVariation = this.getAssignedVariation(subjectKey, flagKey, configuration.getSubjectShards(), variations);
+        String assignedVariationString = assignedVariation.getTypedValue().stringValue();
+        float assignedVariationProbability = (float)(assignedVariation.getShardRange().end - assignedVariation.getShardRange().start + 1) / configuration.getSubjectShards();
+
+        if (assignmentOptions != null && !assignmentOptions.isEmpty()) {
+            assignmentAttributes = assignmentOptions.get(assignedVariationString);
+        }
 
         try {
             String experimentKey = ExperimentHelper.generateKey(flagKey, allocationKey);
@@ -128,8 +147,11 @@ public class EppoClient {
                     .logAssignment(new AssignmentLogData(
                             experimentKey,
                             flagKey,
+                            assignmentModelVersion,
                             allocationKey,
-                            assignedVariation.getTypedValue().stringValue(),
+                            assignedVariationString,
+                            assignedVariationProbability,
+                            assignmentAttributes,
                             subjectKey,
                             subjectAttributes));
         } catch (Exception e) {

@@ -297,5 +297,7 @@ public class EppoClientTest {
 
     assertFalse(stringAssignment.isEmpty());
     assertTrue(banditActions.contains(stringAssignment.get()));
+
+    // TODO: mock logger inspect what was logged
   }
 }

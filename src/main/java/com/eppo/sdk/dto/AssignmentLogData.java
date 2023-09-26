@@ -8,17 +8,24 @@ import java.util.Date;
 public class AssignmentLogData {
     public String experiment;
     public String featureFlag;
+    public String assignmentModelVersion;
     public String allocation;
     public String variation;
+    public Float variationProbability;
+    public EppoAttributes variationAttributes;
     public Date timestamp;
     public String subject;
     public EppoAttributes subjectAttributes;
 
+
     public AssignmentLogData(
             String experiment,
             String featureFlag,
+            String assignmentModelVersion,
             String allocation,
             String variation,
+            Float variationProbability,
+            EppoAttributes variationAttributes,
             String subject,
             EppoAttributes subjectAttributes
     ) {
