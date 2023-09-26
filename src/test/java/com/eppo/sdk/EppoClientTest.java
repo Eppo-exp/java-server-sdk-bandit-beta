@@ -259,7 +259,7 @@ public class EppoClientTest {
     try {
       return FileUtils.readFileToString(mockRacResponse, "UTF8");
     } catch (Exception e) {
-      throw new RuntimeException("Error reading mock RAC data", e);
+      throw new RuntimeException("Error reading mock RAC data: "+e.getMessage(), e);
     }
   }
 
