@@ -259,7 +259,7 @@ public class EppoClientTest {
   @Test
   public void testBandit() {
     // For now, use our special bandits RAC until we fold it into the shared test case suite
-    String racResponseJson = getMockRandomizedAssignmentResponse("src/test/resources/rac-experiments-bandits-beta.json");
+    String racResponseJson = getMockRandomizedAssignmentResponse("src/test/resources/bandits/rac-experiments-bandits-beta.json");
     this.mockServer.stubFor(
       WireMock.get(WireMock.urlMatching(".*randomized_assignment.*")).willReturn(WireMock.okJson(racResponseJson))
     );
