@@ -49,8 +49,10 @@ public class BanditEvaluator {
             md.update(subjectKey.getBytes(StandardCharsets.UTF_8));
             byte[] digest = md.digest();
 
-            // Use the first 4 bytes to create an int and ensure it's positive
-            return Math.abs(ByteBuffer.wrap(digest, 0, 4).getInt());
+            // Use the first 4 bytes to create an int
+            int digestInt = ByteBuffer.wrap(digest, 0, 4).getInt();
+            // Ensure its positive
+            return Math.abs(digestInt);
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("Could not generate MD5", e);
         }

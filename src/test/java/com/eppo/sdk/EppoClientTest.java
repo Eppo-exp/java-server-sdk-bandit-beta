@@ -293,7 +293,7 @@ public class EppoClientTest {
     assertEquals("test_bandit_1", capturedArgument.featureFlag);
     assertEquals("bandit", capturedArgument.allocation);
     assertEquals("random 0.1", capturedArgument.assignmentModelVersion);
-    assertEquals("option1", capturedArgument.variation);
+    assertEquals("option2", capturedArgument.variation);
     assertEquals(0.3333, capturedArgument.variationProbability, 0.0002);
     assertEquals(Map.of(), capturedArgument.variationAttributes);
     assertEquals("subject1", capturedArgument.subject);
