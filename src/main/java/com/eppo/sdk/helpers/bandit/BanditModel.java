@@ -6,6 +6,6 @@ import java.util.Map;
 
 public interface BanditModel {
 
-  public Map<String, Float> weighActions(Map<String, EppoAttributes> actions, EppoAttributes subjectAttributes);
+    Map<String, Float> weighActions(Map<String, EppoAttributes> actions, EppoAttributes subjectAttributes);
 
 }

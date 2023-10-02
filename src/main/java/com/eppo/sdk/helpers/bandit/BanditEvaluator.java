@@ -19,12 +19,12 @@ import java.util.stream.Collectors;
 public class BanditEvaluator {
 
     public static List<Variation> evaluateBanditVariations(
-      String banditKey,
-      String modelName,
-      Map<String, EppoAttributes> actions,
-      String subjectKey,
-      EppoAttributes subjectAttributes,
-      int subjectShards
+        String banditKey,
+        String modelName,
+        Map<String, EppoAttributes> actions,
+        String subjectKey,
+        EppoAttributes subjectAttributes,
+        int subjectShards
     ) {
         BanditModel model = BanditModelFactory.build(modelName);
         Map<String, Float> actionWeights = model.weighActions(actions, subjectAttributes);
@@ -33,10 +33,11 @@ public class BanditEvaluator {
     }
 
     private static List<String> shuffleVariations(Set<String> actionKeys, String banditKey, String subjectKey) {
+        // Shuffle randomly (but deterministically) using a hash, tie-breaking with name
         return actionKeys
-          .stream()
-          .sorted(Comparator.comparingInt(actionKey -> hashToPositiveInt(subjectKey, banditKey, actionKey)))
-          .collect(Collectors.toList());
+            .stream()
+            .sorted(Comparator.comparingInt((String actionKey) -> hashToPositiveInt(subjectKey, banditKey, actionKey)).thenComparing(actionKey -> actionKey))
+            .collect(Collectors.toList());
     }
 
     private static int hashToPositiveInt(String actionKey, String banditKey, String subjectKey) {
@@ -49,7 +50,7 @@ public class BanditEvaluator {
             byte[] digest = md.digest();
 
             // Use the first 4 bytes to create an int and ensure it's positive
-            return ByteBuffer.wrap(digest, 0, 4).getInt() & 0x7FFFFFFF;
+            return Math.abs(ByteBuffer.wrap(digest, 0, 4).getInt());
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("Could not generate MD5", e);
         }

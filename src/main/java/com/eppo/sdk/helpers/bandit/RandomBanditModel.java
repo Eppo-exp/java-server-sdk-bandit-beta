@@ -7,12 +7,11 @@ import java.util.stream.Collectors;
 
 public class RandomBanditModel implements BanditModel {
 
-  public Map<String, Float> weighActions(Map<String, EppoAttributes> actions, EppoAttributes subjectAttributes) {
-    final float weightPerAction = 1 / (float)actions.size();
-    return actions.keySet().stream().collect(Collectors.toMap(
-      key -> key,
-      value -> weightPerAction
-    ));
-  }
-
+    public Map<String, Float> weighActions(Map<String, EppoAttributes> actions, EppoAttributes subjectAttributes) {
+        final float weightPerAction = 1 / (float)actions.size();
+        return actions.keySet().stream().collect(Collectors.toMap(
+            key -> key,
+            value -> weightPerAction
+        ));
+    }
 }
