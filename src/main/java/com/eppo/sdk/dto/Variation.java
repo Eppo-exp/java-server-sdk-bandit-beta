@@ -9,4 +9,5 @@ import lombok.Data;
 public class Variation {
     private EppoValue typedValue;
     private ShardRange shardRange;
+    private AlgorithmType algorithmType;
 }

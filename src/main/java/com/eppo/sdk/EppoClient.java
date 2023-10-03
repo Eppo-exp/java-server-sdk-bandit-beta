@@ -1,27 +1,10 @@
 package com.eppo.sdk;
 
 import com.eppo.sdk.constants.Constants;
-import com.eppo.sdk.dto.Allocation;
-import com.eppo.sdk.dto.AssignmentLogData;
-import com.eppo.sdk.dto.EppoClientConfig;
-import com.eppo.sdk.dto.EppoValue;
-import com.eppo.sdk.dto.EppoValueType;
-import com.eppo.sdk.dto.ExperimentConfiguration;
-import com.eppo.sdk.dto.Rule;
-import com.eppo.sdk.dto.EppoAttributes;
-import com.eppo.sdk.dto.Variation;
+import com.eppo.sdk.dto.*;
 import com.eppo.sdk.exception.EppoClientIsNotInitializedException;
 import com.eppo.sdk.exception.InvalidInputException;
-import com.eppo.sdk.helpers.AppDetails;
-import com.eppo.sdk.helpers.CacheHelper;
-import com.eppo.sdk.helpers.ConfigurationStore;
-import com.eppo.sdk.helpers.EppoHttpClient;
-import com.eppo.sdk.helpers.ExperimentConfigurationRequestor;
-import com.eppo.sdk.helpers.ExperimentHelper;
-import com.eppo.sdk.helpers.FetchConfigurationsTask;
-import com.eppo.sdk.helpers.InputValidator;
-import com.eppo.sdk.helpers.RuleValidator;
-import com.eppo.sdk.helpers.Shard;
+import com.eppo.sdk.helpers.*;
 import com.eppo.sdk.helpers.bandit.BanditEvaluator;
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -87,55 +70,58 @@ public class EppoClient {
             return Optional.empty();
         }
 
-        // Used to assign
-        List<Variation> variations;
-
         // Used for logging
         String assignmentModelVersion = "sharding v1";
-        String allocationKey;
         EppoAttributes assignmentAttributes = null;
 
-        if (configuration.isBandit()) {
-            allocationKey = "bandit";
+        // Find matched rule
+        Optional<Rule> rule = RuleValidator.findMatchingRule(subjectAttributes, configuration.getRules());
+        if (rule.isEmpty()) {
+            log.info("[Eppo SDK] No assigned variation. The subject attributes did not match any targeting rules");
+            return Optional.empty();
+        }
+
+        // Check if in experiment sample
+        String allocationKey = rule.get().getAllocationKey();
+        Allocation allocation = configuration.getAllocation(allocationKey);
+        if (!this.isInExperimentSample(subjectKey, flagKey, configuration.getSubjectShards(),
+          allocation.getPercentExposure())) {
+            log.info("[Eppo SDK] No assigned variation. The subject is not part of the sample population");
+            return Optional.empty();
+        }
+
+        List<Variation> variations = allocation.getVariations();
+
+        // Get assigned variation
+        String assignmentKey = "assignment-" + subjectKey + "-" + flagKey;
+        Variation assignedVariation = VariationSelector.selectVariation(assignmentKey, configuration.getSubjectShards(), variations);
+        float assignedVariationProbability = VariationSelector.variationProbability(assignedVariation, configuration.getSubjectShards());
+
+        if (assignedVariation.getAlgorithmType() == AlgorithmType.BANDIT) {
+
 
             // Properties of the bandit model are hardcoded for now
+            String banditName = assignedVariation.getTypedValue().stringValue();
             String modelName = "random";
             String modelVersion = "0.1";
 
             assignmentModelVersion = modelName+" "+modelVersion;
 
-            variations = BanditEvaluator.evaluateBanditVariations(
-              flagKey,
-              modelName,
-              assignmentOptions,
-              subjectKey,
-              subjectAttributes,
-              configuration.getSubjectShards()
+            List<Variation> actionVariations = BanditEvaluator.evaluateBanditActions(
+                    flagKey,
+                    modelName,
+                    assignmentOptions,
+                    subjectKey,
+                    subjectAttributes,
+                    configuration.getSubjectShards()
             );
-        } else {
-            // Find matched rule
-            Optional<Rule> rule = RuleValidator.findMatchingRule(subjectAttributes, configuration.getRules());
-            if (rule.isEmpty()) {
-                log.info("[Eppo SDK] No assigned variation. The subject attributes did not match any targeting rules");
-                return Optional.empty();
-            }
 
-            // Check if in experiment sample
-            allocationKey = rule.get().getAllocationKey();
-            Allocation allocation = configuration.getAllocation(allocationKey);
-            if (!this.isInExperimentSample(subjectKey, flagKey, configuration.getSubjectShards(),
-              allocation.getPercentExposure())) {
-                log.info("[Eppo SDK] No assigned variation. The subject is not part of the sample population");
-                return Optional.empty();
-            }
-
-            variations = allocation.getVariations();
+            String actionSelectionKey = "bandit-" + banditName + "-" + subjectKey + "-" + flagKey;
+            assignedVariation = VariationSelector.selectVariation(actionSelectionKey, configuration.getSubjectShards(), actionVariations);
+            float actionProbability = VariationSelector.variationProbability(assignedVariation, configuration.getSubjectShards()); //TODO: also log
         }
 
-        // Get assigned variation
-        Variation assignedVariation = this.getAssignedVariation(subjectKey, flagKey, configuration.getSubjectShards(), variations);
         String assignedVariationString = assignedVariation.getTypedValue().stringValue();
-        float assignedVariationProbability = (float)(assignedVariation.getShardRange().end - assignedVariation.getShardRange().start + 1) / configuration.getSubjectShards();
 
         if (assignmentOptions != null && !assignmentOptions.isEmpty()) {
             assignmentAttributes = assignmentOptions.get(assignedVariationString);
@@ -410,29 +396,6 @@ public class EppoClient {
             float percentageExposure) {
         int shard = Shard.getShard("exposure-" + subjectKey + "-" + experimentKey, subjectShards);
         return shard <= percentageExposure * subjectShards;
-    }
-
-    /**
-     * This function is used to get assigned variation
-     *
-     * @param subjectKey
-     * @param experimentKey
-     * @param subjectShards
-     * @param subjectShards
-     * @return
-     */
-    private Variation getAssignedVariation(
-            String subjectKey,
-            String experimentKey,
-            int subjectShards,
-            List<Variation> variations) {
-        int shard = Shard.getShard("assignment-" + subjectKey + "-" + experimentKey, subjectShards);
-
-        Optional<Variation> variation = variations.stream()
-                .filter(config -> Shard.isShardInRange(shard, config.getShardRange()))
-                .findFirst();
-
-        return variation.get();
     }
 
     /**
