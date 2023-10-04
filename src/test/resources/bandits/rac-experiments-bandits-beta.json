@@ -23,12 +23,12 @@
                 "start": 0,
                 "end": 2000
               },
-              "algorithmType": "constant"
+              "algorithmType": "bandit"
             },
             {
               "name": "bandit",
-              "value": "banner",
-              "typedValue": "banner",
+              "value": "banner-bandit",
+              "typedValue": "banner-bandit",
               "shardRange": {
                 "start": 2000,
                 "end": 10000

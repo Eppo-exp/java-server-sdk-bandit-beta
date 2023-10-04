@@ -6,6 +6,7 @@ import com.eppo.sdk.exception.EppoClientIsNotInitializedException;
 import com.eppo.sdk.exception.InvalidInputException;
 import com.eppo.sdk.helpers.*;
 import com.eppo.sdk.helpers.bandit.BanditEvaluator;
+import com.eppo.sdk.helpers.bandit.BanditExperimentVariationName;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import lombok.extern.slf4j.Slf4j;
@@ -70,10 +71,6 @@ public class EppoClient {
             return Optional.empty();
         }
 
-        // Used for logging
-        String assignmentModelVersion = "sharding v1";
-        EppoAttributes assignmentAttributes = null;
-
         // Find matched rule
         Optional<Rule> rule = RuleValidator.findMatchingRule(subjectAttributes, configuration.getRules());
         if (rule.isEmpty()) {
@@ -92,58 +89,86 @@ public class EppoClient {
 
         List<Variation> variations = allocation.getVariations();
 
+        String experimentKey = ExperimentHelper.generateKey(flagKey, allocationKey); // Used for logging
+
         // Get assigned variation
         String assignmentKey = "assignment-" + subjectKey + "-" + flagKey;
         Variation assignedVariation = VariationSelector.selectVariation(assignmentKey, configuration.getSubjectShards(), variations);
-        float assignedVariationProbability = VariationSelector.variationProbability(assignedVariation, configuration.getSubjectShards());
+        String assignedVariationString = assignedVariation.getTypedValue().stringValue();
+        Optional<EppoValue> assignmentResult = Optional.of(assignedVariation.getTypedValue());
 
         if (assignedVariation.getAlgorithmType() == AlgorithmType.BANDIT) {
 
-
-            // Properties of the bandit model are hardcoded for now
             String banditName = assignedVariation.getTypedValue().stringValue();
-            String modelName = "random";
-            String modelVersion = "0.1";
+            BanditExperimentVariationName variationName = BanditExperimentVariationName.of(assignedVariation.getName());
+            EppoAttributes actionAttributes = new EppoAttributes();
+            boolean banditPicksAction = variationName == BanditExperimentVariationName.BANDIT;
+            String actionString = assignedVariationString;
+            Float actionProbability = null;
+            String modelVersionToLog = null;
 
-            assignmentModelVersion = modelName+" "+modelVersion;
+            if (banditPicksAction) {
+                // Properties of the bandit model are hardcoded for now
+                // These would be pulled from the RAC
+                String modelName = "random";
+                String modelVersion = "0.1";
+                modelVersionToLog = modelName + " " + modelVersion;
 
-            List<Variation> actionVariations = BanditEvaluator.evaluateBanditActions(
-                    flagKey,
-                    modelName,
-                    assignmentOptions,
-                    subjectKey,
-                    subjectAttributes,
-                    configuration.getSubjectShards()
-            );
 
-            String actionSelectionKey = "bandit-" + banditName + "-" + subjectKey + "-" + flagKey;
-            assignedVariation = VariationSelector.selectVariation(actionSelectionKey, configuration.getSubjectShards(), actionVariations);
-            float actionProbability = VariationSelector.variationProbability(assignedVariation, configuration.getSubjectShards()); //TODO: also log
-        }
+                List<Variation> actionVariations = BanditEvaluator.evaluateBanditActions(
+                        experimentKey,
+                        modelName,
+                        assignmentOptions,
+                        subjectKey,
+                        subjectAttributes,
+                        configuration.getSubjectShards()
+                );
 
-        String assignedVariationString = assignedVariation.getTypedValue().stringValue();
+                String actionSelectionKey = "bandit-" + banditName + "-" + subjectKey + "-" + flagKey;
 
-        if (assignmentOptions != null && !assignmentOptions.isEmpty()) {
-            assignmentAttributes = assignmentOptions.get(assignedVariationString);
+                Variation selectedAction = VariationSelector.selectVariation(actionSelectionKey, configuration.getSubjectShards(), actionVariations);
+
+                EppoValue actionValue = selectedAction.getTypedValue();
+                actionString = actionValue.stringValue();
+                actionProbability = VariationSelector.variationProbability(selectedAction, configuration.getSubjectShards());
+
+                // So that we return the bandit action, update our result value
+                assignmentResult = Optional.of(actionValue);
+            }
+
+            if (assignmentOptions != null && !assignmentOptions.isEmpty()) {
+                actionAttributes = assignmentOptions.get(actionString);
+            }
+
+            if (this.eppoClientConfig.getBanditLogger() != null) {
+                // Do bandit-specific logging
+                this.eppoClientConfig.getBanditLogger().logBanditAction(new BanditLogData(
+                        experimentKey,
+                        banditName,
+                        subjectKey,
+                        subjectAttributes,
+                        actionString,
+                        actionAttributes,
+                        banditPicksAction,
+                        actionProbability,
+                        modelVersionToLog
+                ));
+            }
         }
 
         try {
-            String experimentKey = ExperimentHelper.generateKey(flagKey, allocationKey);
             this.eppoClientConfig.getAssignmentLogger()
                     .logAssignment(new AssignmentLogData(
                             experimentKey,
                             flagKey,
-                            assignmentModelVersion,
                             allocationKey,
                             assignedVariationString,
-                            assignedVariationProbability,
-                            assignmentAttributes,
                             subjectKey,
                             subjectAttributes));
         } catch (Exception e) {
             log.warn("Error logging assignment", e);
         }
-        return Optional.of(assignedVariation.getTypedValue());
+        return assignmentResult;
     }
 
     /**

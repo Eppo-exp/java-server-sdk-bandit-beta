@@ -265,11 +265,13 @@ public class EppoClientTest {
     );
 
     // Re-initialize client with our bandit RAC and a mock logger we can spy on
-    IAssignmentLogger mockLogger = mock();
+    IAssignmentLogger mockAssignmentLogger = mock();
+    IBanditLogger mockBanditLogger = mock();
     EppoClientConfig config = EppoClientConfig.builder()
       .apiKey("mock-api-key")
       .baseURL("http://localhost:4001")
-      .assignmentLogger(mockLogger)
+      .assignmentLogger(mockAssignmentLogger)
+      .banditLogger(mockBanditLogger)
       .build();
     EppoClient.init(config);
 
@@ -283,20 +285,33 @@ public class EppoClientTest {
       banditActions
     );
 
+    // Verify assignment
     assertFalse(stringAssignment.isEmpty());
     assertTrue(banditActions.contains(stringAssignment.get()));
 
-    ArgumentCaptor<AssignmentLogData> argumentCaptor = ArgumentCaptor.forClass(AssignmentLogData.class);
-    verify(mockLogger, times(1)).logAssignment(argumentCaptor.capture());
-    AssignmentLogData capturedArgument = argumentCaptor.getValue();
-    assertEquals("test_bandit_1-bandit", capturedArgument.experiment);
-    assertEquals("test_bandit_1", capturedArgument.featureFlag);
-    assertEquals("bandit", capturedArgument.allocation);
-    assertEquals("random 0.1", capturedArgument.assignmentModelVersion);
-    assertEquals("option3", capturedArgument.variation);
-    assertEquals(0.8000, capturedArgument.variationProbability, 0.0002);
-    assertEquals(Map.of(), capturedArgument.variationAttributes);
-    assertEquals("subject1", capturedArgument.subject);
-    assertEquals(Map.of(), capturedArgument.subjectAttributes);
+    // Verify experiment assignment log
+    ArgumentCaptor<AssignmentLogData> assignmentLogCaptor = ArgumentCaptor.forClass(AssignmentLogData.class);
+    verify(mockAssignmentLogger, times(1)).logAssignment(assignmentLogCaptor.capture());
+    AssignmentLogData capturedAssignmentLog = assignmentLogCaptor.getValue();
+    assertEquals("test_bandit_1-bandit", capturedAssignmentLog.experiment);
+    assertEquals("test_bandit_1", capturedAssignmentLog.featureFlag);
+    assertEquals("bandit", capturedAssignmentLog.allocation);
+    assertEquals("banner-bandit", capturedAssignmentLog.variation);
+    assertEquals("subject1", capturedAssignmentLog.subject);
+    assertEquals(Map.of(), capturedAssignmentLog.subjectAttributes);
+
+    // Verify bandit log
+    ArgumentCaptor<BanditLogData> banditLogCaptor = ArgumentCaptor.forClass(BanditLogData.class);
+    verify(mockBanditLogger, times(1)).logBanditAction(banditLogCaptor.capture());
+    BanditLogData capturedBanditLog = banditLogCaptor.getValue();
+    assertEquals("test_bandit_1-bandit", capturedBanditLog.experiment);
+    assertEquals("banner-bandit", capturedBanditLog.bandit);
+    assertEquals("subject1", capturedBanditLog.subject);
+    assertEquals(Map.of(), capturedBanditLog.subjectAttributes);
+    assertEquals("option3", capturedBanditLog.action);
+    assertEquals(Map.of(), capturedBanditLog.actionAttributes);
+    assertTrue(capturedBanditLog.actionSelectedByBandit);
+    assertEquals(0.3333, capturedBanditLog.actionProbability, 0.0002);
+    assertEquals("random 0.1", capturedBanditLog.modelVersion);
   }
 }

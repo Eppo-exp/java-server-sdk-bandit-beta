@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 public class BanditEvaluator {
 
     public static List<Variation> evaluateBanditActions(
-        String banditKey,
+        String experimentKey,
         String modelName,
         Map<String, EppoAttributes> actions,
         String subjectKey,
@@ -25,21 +25,21 @@ public class BanditEvaluator {
     ) {
         BanditModel model = BanditModelFactory.build(modelName);
         Map<String, Float> actionWeights = model.weighActions(actions, subjectAttributes);
-        List<String> shuffledActions = shuffleActions(actions.keySet(), banditKey, subjectKey);
+        List<String> shuffledActions = shuffleActions(actions.keySet(), experimentKey, subjectKey);
         return generateVariations(shuffledActions, actionWeights, subjectShards);
     }
 
-    private static List<String> shuffleActions(Set<String> actionKeys, String banditKey, String subjectKey) {
+    private static List<String> shuffleActions(Set<String> actionKeys, String experimentKey, String subjectKey) {
         // Shuffle randomly (but deterministically) using a hash, tie-breaking with name
         return actionKeys
             .stream()
-            .sorted(Comparator.comparingInt((String actionKey) -> hashToPositiveInt(subjectKey, banditKey, actionKey)).thenComparing(actionKey -> actionKey))
+            .sorted(Comparator.comparingInt((String actionKey) -> hashToPositiveInt(experimentKey, subjectKey, actionKey)).thenComparing(actionKey -> actionKey))
             .collect(Collectors.toList());
     }
 
-    private static int hashToPositiveInt(String actionKey, String banditKey, String subjectKey) {
+    private static int hashToPositiveInt(String experimentKey, String subjectKey, String actionKey) {
         int SHUFFLE_SHARDS = 10000;
-        return Shard.getShard(actionKey+"-"+banditKey+"-"+subjectKey, SHUFFLE_SHARDS);
+        return Shard.getShard(experimentKey+"-"+subjectKey+"-"+actionKey, SHUFFLE_SHARDS);
     }
 
     private static List<Variation> generateVariations(List<String> shuffledActions, Map<String, Float>  actionWeights, int subjectShards) {
