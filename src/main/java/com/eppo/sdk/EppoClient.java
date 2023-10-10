@@ -193,7 +193,6 @@ public class EppoClient {
               assignmentResult.getSubjectAttributes(),
               actionString,
               actionAttributes,
-              true, // TODO: log variation name?
               actionProbability,
               modelVersionToLog
             ));
@@ -494,14 +493,15 @@ public class EppoClient {
                 return null;
             }
 
+            String variationValue = assignmentResult.getVariation().getTypedValue().stringValue();
+
             this.eppoClientConfig.getBanditLogger().logBanditAction(new BanditLogData(
               assignmentResult.getExperimentKey(),
-              null,
+              variationValue,
               subjectKey,
               subjectAttributes,
               actionString,
               actionAttributes,
-              false,
               null,
               null
             ));

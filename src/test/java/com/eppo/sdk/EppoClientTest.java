@@ -305,12 +305,11 @@ public class EppoClientTest {
     verify(mockBanditLogger, times(1)).logBanditAction(banditLogCaptor.capture());
     BanditLogData capturedBanditLog = banditLogCaptor.getValue();
     assertEquals("test_bandit_1-bandit", capturedBanditLog.experiment);
-    assertEquals("banner-bandit", capturedBanditLog.bandit);
+    assertEquals("banner-bandit", capturedBanditLog.variation);
     assertEquals("subject1", capturedBanditLog.subject);
     assertEquals(Map.of(), capturedBanditLog.subjectAttributes);
     assertEquals("option3", capturedBanditLog.action);
     assertEquals(Map.of(), capturedBanditLog.actionAttributes);
-    assertTrue(capturedBanditLog.actionSelectedByBandit);
     assertEquals(0.3333, capturedBanditLog.actionProbability, 0.0002);
     assertEquals("random 0.1", capturedBanditLog.modelVersion);
   }
@@ -373,12 +372,11 @@ public class EppoClientTest {
     verify(mockBanditLogger, times(1)).logBanditAction(banditLogCaptor.capture());
     BanditLogData capturedBanditLog = banditLogCaptor.getValue();
     assertEquals("test_bandit_1-bandit", capturedBanditLog.experiment);
-    assertNull(capturedBanditLog.bandit);
+    assertEquals("control", capturedBanditLog.variation);
     assertEquals("subject8", capturedBanditLog.subject);
     assertEquals(Map.of(), capturedBanditLog.subjectAttributes);
     assertEquals("option0", capturedBanditLog.action);
     assertEquals(Map.of(), capturedBanditLog.actionAttributes);
-    assertFalse(capturedBanditLog.actionSelectedByBandit);
     assertNull(capturedBanditLog.actionProbability);
     assertNull(capturedBanditLog.modelVersion);
   }
