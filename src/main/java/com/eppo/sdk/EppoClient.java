@@ -6,7 +6,6 @@ import com.eppo.sdk.exception.EppoClientIsNotInitializedException;
 import com.eppo.sdk.exception.InvalidInputException;
 import com.eppo.sdk.helpers.*;
 import com.eppo.sdk.helpers.bandit.BanditEvaluator;
-import com.eppo.sdk.helpers.bandit.BanditExperimentVariationName;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import lombok.extern.slf4j.Slf4j;
