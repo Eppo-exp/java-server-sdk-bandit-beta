@@ -22,8 +22,7 @@
               "shardRange": {
                 "start": 0,
                 "end": 2000
-              },
-              "algorithmType": "bandit"
+              }
             },
             {
               "name": "bandit",

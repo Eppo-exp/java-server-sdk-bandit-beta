@@ -6,7 +6,8 @@ import java.util.Arrays;
 
 public enum AlgorithmType {
     CONSTANT,
-    BANDIT;
+    BANDIT,
+    OVERRIDE;
 
     @JsonCreator
     public static AlgorithmType forValues(String value) {

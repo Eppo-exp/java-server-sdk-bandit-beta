@@ -52,110 +52,29 @@ public class EppoClient {
         InputValidator.validateNotBlank(subjectKey, "Invalid argument: subjectKey cannot be blank");
         InputValidator.validateNotBlank(flagKey, "Invalid argument: flagKey cannot be blank");
 
-        // Fetch Experiment Configuration
-        ExperimentConfiguration configuration = this.configurationStore.getExperimentConfiguration(flagKey);
-        if (configuration == null) {
-            log.warn("[Eppo SDK] No configuration found for key: " + flagKey);
+        VariationAssignmentResult assignmentResult = this.getAssignedVariation(flagKey, subjectKey, subjectAttributes);
+
+        if (assignmentResult == null) {
             return Optional.empty();
         }
 
-        // Check if subject has override variations
-        EppoValue subjectVariationOverride = this.getSubjectVariationOverride(subjectKey, configuration);
-        if (!subjectVariationOverride.isNull()) {
-            return Optional.of(subjectVariationOverride);
-        }
+        Variation assignedVariation = assignmentResult.getVariation();
+        Optional<EppoValue> assignmentValue = Optional.of(assignedVariation.getTypedValue());
 
-        // Check if disabled
-        if (!configuration.isEnabled()) {
-            log.info("[Eppo SDK] No assigned variation because the experiment or feature flag {} is disabled", flagKey);
-            return Optional.empty();
-        }
-
-        // Find matched rule
-        Optional<Rule> rule = RuleValidator.findMatchingRule(subjectAttributes, configuration.getRules());
-        if (rule.isEmpty()) {
-            log.info("[Eppo SDK] No assigned variation. The subject attributes did not match any targeting rules");
-            return Optional.empty();
-        }
-
-        // Check if in experiment sample
-        String allocationKey = rule.get().getAllocationKey();
-        Allocation allocation = configuration.getAllocation(allocationKey);
-        if (!this.isInExperimentSample(subjectKey, flagKey, configuration.getSubjectShards(),
-          allocation.getPercentExposure())) {
-            log.info("[Eppo SDK] No assigned variation. The subject is not part of the sample population");
-            return Optional.empty();
-        }
-
-        List<Variation> variations = allocation.getVariations();
-
-        String experimentKey = ExperimentHelper.generateKey(flagKey, allocationKey); // Used for logging
-
-        // Get assigned variation
-        String assignmentKey = "assignment-" + subjectKey + "-" + flagKey;
-        Variation assignedVariation = VariationSelector.selectVariation(assignmentKey, configuration.getSubjectShards(), variations);
+        // Below is used for logging
+        String experimentKey = assignmentResult.getExperimentKey();
+        String allocationKey = assignmentResult.getAllocationKey();
         String assignedVariationString = assignedVariation.getTypedValue().stringValue();
-        Optional<EppoValue> assignmentResult = Optional.of(assignedVariation.getTypedValue());
 
-        if (assignedVariation.getAlgorithmType() == AlgorithmType.BANDIT) {
-
-            String banditName = assignedVariation.getTypedValue().stringValue();
-            BanditExperimentVariationName variationName = BanditExperimentVariationName.of(assignedVariation.getName());
-            EppoAttributes actionAttributes = new EppoAttributes();
-            boolean banditPicksAction = variationName == BanditExperimentVariationName.BANDIT;
-            String actionString = assignedVariationString;
-            Float actionProbability = null;
-            String modelVersionToLog = null;
-
-            if (banditPicksAction) {
-                // Properties of the bandit model are hardcoded for now
-                // These would be pulled from the RAC
-                String modelName = "random";
-                String modelVersion = "0.1";
-                modelVersionToLog = modelName + " " + modelVersion;
-
-
-                List<Variation> actionVariations = BanditEvaluator.evaluateBanditActions(
-                        experimentKey,
-                        modelName,
-                        assignmentOptions,
-                        subjectKey,
-                        subjectAttributes,
-                        configuration.getSubjectShards()
-                );
-
-                String actionSelectionKey = "bandit-" + banditName + "-" + subjectKey + "-" + flagKey;
-
-                Variation selectedAction = VariationSelector.selectVariation(actionSelectionKey, configuration.getSubjectShards(), actionVariations);
-
-                EppoValue actionValue = selectedAction.getTypedValue();
-                actionString = actionValue.stringValue();
-                actionProbability = VariationSelector.variationProbability(selectedAction, configuration.getSubjectShards());
-
-                // So that we return the bandit action, update our result value
-                assignmentResult = Optional.of(actionValue);
-            }
-
-            if (assignmentOptions != null && !assignmentOptions.isEmpty()) {
-                actionAttributes = assignmentOptions.get(actionString);
-            }
-
-            if (this.eppoClientConfig.getBanditLogger() != null) {
-                // Do bandit-specific logging
-                this.eppoClientConfig.getBanditLogger().logBanditAction(new BanditLogData(
-                        experimentKey,
-                        banditName,
-                        subjectKey,
-                        subjectAttributes,
-                        actionString,
-                        actionAttributes,
-                        banditPicksAction,
-                        actionProbability,
-                        modelVersionToLog
-                ));
-            }
+        if (assignedVariation.getAlgorithmType() == AlgorithmType.OVERRIDE) {
+            // Assigned variation was from an override; return its value without logging
+            return assignmentValue;
+        } else if (assignedVariation.getAlgorithmType() == AlgorithmType.BANDIT) {
+            // Assigned variation is a bandit; need to use the bandit to determine its value
+            assignmentValue = this.determineAndLogBanditAction(assignmentResult, assignmentOptions);
         }
 
+        // Log the assignment
         try {
             this.eppoClientConfig.getAssignmentLogger()
                     .logAssignment(new AssignmentLogData(
@@ -168,7 +87,119 @@ public class EppoClient {
         } catch (Exception e) {
             log.warn("Error logging assignment", e);
         }
-        return assignmentResult;
+
+        return assignmentValue;
+    }
+
+    private VariationAssignmentResult getAssignedVariation(String flagKey, String subjectKey, EppoAttributes subjectAttributes) {
+
+        // Fetch Experiment Configuration
+        ExperimentConfiguration configuration = this.configurationStore.getExperimentConfiguration(flagKey);
+        if (configuration == null) {
+            log.warn("[Eppo SDK] No configuration found for key: " + flagKey);
+            return null;
+        }
+
+        // Check if subject has override variations
+        EppoValue subjectVariationOverride = this.getSubjectVariationOverride(subjectKey, configuration);
+        if (!subjectVariationOverride.isNull()) {
+            // Create placeholder variation for the override
+            Variation overrideVariation = new Variation();
+            overrideVariation.setTypedValue(subjectVariationOverride);
+            overrideVariation.setAlgorithmType(AlgorithmType.OVERRIDE);
+            return new VariationAssignmentResult(overrideVariation);
+        }
+
+        // Check if disabled
+        if (!configuration.isEnabled()) {
+            log.info("[Eppo SDK] No assigned variation because the experiment or feature flag {} is disabled", flagKey);
+            return null;
+        }
+
+        // Find matched rule
+        Optional<Rule> rule = RuleValidator.findMatchingRule(subjectAttributes, configuration.getRules());
+        if (rule.isEmpty()) {
+            log.info("[Eppo SDK] No assigned variation. The subject attributes did not match any targeting rules");
+            return null;
+        }
+
+        // Check if in experiment sample
+        String allocationKey = rule.get().getAllocationKey();
+        Allocation allocation = configuration.getAllocation(allocationKey);
+        int subjectShards = configuration.getSubjectShards();
+        if (!this.isInExperimentSample(subjectKey, flagKey, subjectShards,
+          allocation.getPercentExposure())) {
+            log.info("[Eppo SDK] No assigned variation. The subject is not part of the sample population");
+            return null;
+        }
+
+        List<Variation> variations = allocation.getVariations();
+
+        String experimentKey = ExperimentHelper.generateKey(flagKey, allocationKey); // Used for logging
+
+        // Get assigned variation
+        String assignmentKey = "assignment-" + subjectKey + "-" + flagKey;
+        Variation assignedVariation = VariationHelper.selectVariation(assignmentKey, subjectShards, variations);
+
+        return new VariationAssignmentResult(
+          assignedVariation,
+          subjectKey,
+          subjectAttributes,
+          flagKey,
+          allocationKey,
+          experimentKey,
+          subjectShards
+        );
+    }
+
+    private Optional<EppoValue> determineAndLogBanditAction(VariationAssignmentResult assignmentResult, Map<String, EppoAttributes> assignmentOptions) {
+        String banditName = assignmentResult.getVariation().getTypedValue().stringValue();
+
+        // Properties of the bandit model are hardcoded for now
+        // These would be pulled from the RAC
+        String modelName = "random";
+        String modelVersion = "0.1";
+        String modelVersionToLog = modelName + " " + modelVersion;
+
+        List<Variation> actionVariations = BanditEvaluator.evaluateBanditActions(
+          assignmentResult.getExperimentKey(),
+          modelName,
+          assignmentOptions,
+          assignmentResult.getSubjectKey(),
+          assignmentResult.getSubjectAttributes(),
+          assignmentResult.getSubjectShards()
+        );
+
+        String actionSelectionKey = "bandit-" + banditName + "-" + assignmentResult.getSubjectKey() + "-" + assignmentResult.getFlagKey();
+        Variation selectedAction = VariationHelper.selectVariation(actionSelectionKey, assignmentResult.getSubjectShards(), actionVariations);
+
+        EppoValue actionValue = selectedAction.getTypedValue();
+        String actionString = actionValue.stringValue();
+        float actionProbability = VariationHelper.variationProbability(selectedAction, assignmentResult.getSubjectShards());
+
+        if (this.eppoClientConfig.getBanditLogger() != null) {
+            // Do bandit-specific logging
+
+            // Get the action-related attributes
+            EppoAttributes actionAttributes = new EppoAttributes();
+            if (assignmentOptions != null && !assignmentOptions.isEmpty()) {
+                actionAttributes = assignmentOptions.get(actionString);
+            }
+
+            this.eppoClientConfig.getBanditLogger().logBanditAction(new BanditLogData(
+              assignmentResult.getExperimentKey(),
+              banditName,
+              assignmentResult.getSubjectKey(),
+              assignmentResult.getSubjectAttributes(),
+              actionString,
+              actionAttributes,
+              true, // TODO: log variation name?
+              actionProbability,
+              modelVersionToLog
+            ));
+        }
+
+        return Optional.of(actionValue);
     }
 
     /**
@@ -435,6 +466,49 @@ public class EppoClient {
             ExperimentConfiguration experimentConfiguration) {
         String hexedSubjectKey = Shard.getHex(subjectKey);
         return experimentConfiguration.getTypedOverrides().getOrDefault(hexedSubjectKey, new EppoValue());
+    }
+
+    /***
+     * Logs an action taken that was not selected by the bandit.
+     * Useful for full transparency on what users experienced.
+     * @param subjectKey subjectKey identifier of the experiment subject, for example a user ID.
+     * @param flagKey feature flag, bandit, or experiment identifier
+     * @param subjectAttributes optional attributes associated with the subject, for example name, email, account age, etc.
+     * @param actionString name of the action taken for the subject
+     * @param actionAttributes attributes associated with the given action
+     * @return null if no exception was encountered by logging; otherwise, the encountered exception
+     */
+    public Exception logNonBanditAction(
+        String subjectKey,
+        String flagKey,
+        EppoAttributes subjectAttributes,
+        String actionString,
+        EppoAttributes actionAttributes
+    ) {
+        Exception loggingException = null;
+        try {
+            VariationAssignmentResult assignmentResult = this.getAssignedVariation(flagKey, subjectKey, subjectAttributes);
+
+            if (assignmentResult == null) {
+                // No bandit at play
+                return null;
+            }
+
+            this.eppoClientConfig.getBanditLogger().logBanditAction(new BanditLogData(
+              assignmentResult.getExperimentKey(),
+              null,
+              subjectKey,
+              subjectAttributes,
+              actionString,
+              actionAttributes,
+              false,
+              null,
+              null
+            ));
+        } catch (Exception ex) {
+            loggingException = ex;
+        }
+        return loggingException;
     }
 
     /***

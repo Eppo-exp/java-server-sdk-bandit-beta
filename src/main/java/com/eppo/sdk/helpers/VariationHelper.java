@@ -6,7 +6,8 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
-public class VariationSelector {
+public class VariationHelper {
+
     static public Variation selectVariation(String inputKey, int subjectShards, List<Variation> variations) {
         int shard = Shard.getShard(inputKey, subjectShards);
 
