@@ -492,7 +492,7 @@ public class EppoClient {
                 return null;
             }
 
-            String variationValue = assignmentResult.getVariation().getTypedValue().stringValue();
+            String variationValue = assignmentResult.getVariation().getTypedValue().toString();
 
             this.eppoClientConfig.getBanditLogger().logBanditAction(new BanditLogData(
               assignmentResult.getExperimentKey(),
