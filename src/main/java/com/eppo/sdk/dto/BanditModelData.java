@@ -7,5 +7,5 @@ import java.util.Map;
 @Data
 public class BanditModelData {
   private Double gamma;
-  private Map<String, BanditActionCoefficients> actionCoefficients;
+  private Map<String, BanditCoefficients> coefficients;
 }

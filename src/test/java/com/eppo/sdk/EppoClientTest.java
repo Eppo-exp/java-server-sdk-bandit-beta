@@ -271,7 +271,7 @@ public class EppoClientTest {
     this.mockServer.stubFor(
       WireMock.get(WireMock.urlMatching(".*randomized_assignment/v3/config\\?.*")).willReturn(WireMock.okJson(racResponseJson))
     );
-    this.addBanditRacToMockServer(this.mockServer, "src/test/resources/bandits/bandit-parameters-1.json");
+    this.addBanditRacToMockServer(this.mockServer, "src/test/resources/bandits/bandits-parameters-1.json");
 
     // Re-initialize client with our bandit RAC and a mock logger we can spy on
     IAssignmentLogger mockAssignmentLogger = mock();
@@ -330,7 +330,7 @@ public class EppoClientTest {
     this.mockServer.stubFor(
             WireMock.get(WireMock.urlMatching(".*randomized_assignment/v3/config\\?.*")).willReturn(WireMock.okJson(racResponseJson))
     );
-    this.addBanditRacToMockServer(this.mockServer, "src/test/resources/bandits/bandit-parameters-1.json");
+    this.addBanditRacToMockServer(this.mockServer, "src/test/resources/bandits/bandits-parameters-1.json");
 
     // Re-initialize client with our bandit RAC and a mock logger we can spy on
     IAssignmentLogger mockAssignmentLogger = mock();
@@ -398,7 +398,7 @@ public class EppoClientTest {
     this.mockServer.stubFor(
             WireMock.get(WireMock.urlMatching(".*randomized_assignment/v3/config\\?.*")).willReturn(WireMock.okJson(racResponseJson))
     );
-    this.addBanditRacToMockServer(this.mockServer, "src/test/resources/bandits/bandit-parameters-1.json");
+    this.addBanditRacToMockServer(this.mockServer, "src/test/resources/bandits/bandits-parameters-1.json");
 
     // Re-initialize client with our bandit RAC and a mock logger we can spy on
     EppoClientConfig config = EppoClientConfig.builder()
