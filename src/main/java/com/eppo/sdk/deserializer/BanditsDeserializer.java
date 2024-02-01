@@ -10,9 +10,6 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.*;
 
-/**
- * Eppo Value Deserializer Class
- */
 public class BanditsDeserializer extends StdDeserializer<Map<String, BanditParameters>> {
 
     // Note: public default constructor is required by Jackson

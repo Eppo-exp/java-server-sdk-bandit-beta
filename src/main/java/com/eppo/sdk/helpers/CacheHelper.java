@@ -37,7 +37,6 @@ public class CacheHelper {
         );
     }
 
-    // TOTO templetize/genericize
     public Cache<String, BanditParameters> createBanditParameterCache(int maxEntries) {
         return this.cacheManager.createCache(
           Constants.BANDIT_PARAMETER_CACHE_KEY,
