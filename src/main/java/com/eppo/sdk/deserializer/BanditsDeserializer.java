@@ -3,7 +3,6 @@ package com.eppo.sdk.deserializer;
 import com.eppo.sdk.dto.*;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 
@@ -16,8 +15,6 @@ import java.util.*;
  */
 public class BanditsDeserializer extends StdDeserializer<Map<String, BanditParameters>> {
 
-    // TODO: do I need these unused constructors?
-
     public BanditsDeserializer() {
         this((Class<?>) null);
     }
@@ -26,20 +23,11 @@ public class BanditsDeserializer extends StdDeserializer<Map<String, BanditParam
         super(vc);
     }
 
-    protected BanditsDeserializer(JavaType valueType) {
-        super(valueType);
-    }
-
-    protected BanditsDeserializer(StdDeserializer<?> src) {
-        super(src);
-    }
-
     @Override
     public Map<String, BanditParameters> deserialize(
             JsonParser jsonParser,
             DeserializationContext deserializationContext
     ) throws IOException {
-        // TODO: clean up
         JsonNode banditsNode = jsonParser.getCodec().readTree(jsonParser);
         Map<String, BanditParameters> bandits = new HashMap<>();
         banditsNode.iterator().forEachRemaining(banditNode -> {
@@ -63,60 +51,73 @@ public class BanditsDeserializer extends StdDeserializer<Map<String, BanditParam
             JsonNode modelsCoefficientsNode = modelDataNode.get("actionCoefficients");
 
             Map<String, BanditActionCoefficients> actionCoefficients = new HashMap<>();
-            modelsCoefficientsNode.iterator().forEachRemaining(modelsCoefficientNode -> {
-                String actionKey = modelsCoefficientNode.get("actionKey").asText();
-                Double intercept = modelsCoefficientNode.get("intercept").asDouble();
-
-                Map<String, BanditNumericAttributeCoefficients> numericAttributeCoefficients = new HashMap<>();
-                JsonNode numericAttributeCoefficientsNode = modelsCoefficientNode.get("numericAttributeCoefficients");
-                numericAttributeCoefficientsNode.iterator().forEachRemaining(numericAttributeCoefficientNode -> {
-                    String attributeKey = numericAttributeCoefficientNode.get("attributeKey").asText();
-                    Double coefficient = numericAttributeCoefficientNode.get("coefficient").asDouble();
-                    Double missingValueCoefficient = numericAttributeCoefficientNode.get("missingValueCoefficient").asDouble();
-
-                    BanditNumericAttributeCoefficients numericAttributeCoefficient = new BanditNumericAttributeCoefficients();
-                    numericAttributeCoefficient.setAttributeKey(attributeKey);
-                    numericAttributeCoefficient.setCoefficient(coefficient);
-                    numericAttributeCoefficient.setMissingValueCoefficient(missingValueCoefficient);
-
-                    numericAttributeCoefficients.put(attributeKey, numericAttributeCoefficient);
-                });
-
-                Map<String, BanditCategoryAttributeCoefficients> categoryAttributeCoefficients = new HashMap<>();
-                JsonNode categoryAttributeCoefficientsNode = modelsCoefficientNode.get("categoryAttributeCoefficients");
-                categoryAttributeCoefficientsNode.iterator().forEachRemaining(categoryAttributeCoefficientNode -> {
-                    String attributeKey = categoryAttributeCoefficientNode.get("attributeKey").asText();
-                    Double missingValueCoefficient = categoryAttributeCoefficientNode.get("missingValueCoefficient").asDouble();
-                    Map<String, Double> valueCoefficients = new HashMap<>();
-                    JsonNode valuesNode = categoryAttributeCoefficientNode.get("values");
-                    valuesNode.iterator().forEachRemaining(valueNode -> {
-                        String value = valueNode.get("value").asText();
-                        Double coefficient = valueNode.get("coefficient").asDouble();
-                        valueCoefficients.put(value, coefficient);
-                    });
-
-                    BanditCategoryAttributeCoefficients coefficients = new BanditCategoryAttributeCoefficients();
-                    coefficients.setAttributeKey(attributeKey);
-                    coefficients.setValueCoefficients(valueCoefficients);
-                    coefficients.setMissingValueCoefficient(missingValueCoefficient);
-
-                    categoryAttributeCoefficients.put(attributeKey, coefficients);
-                });
-
-                BanditActionCoefficients coefficients = new BanditActionCoefficients();
-                coefficients.setActionKey(actionKey);
-                coefficients.setIntercept(intercept);
-                coefficients.setNumericAttributeCoefficients(numericAttributeCoefficients);
-                coefficients.setCategoryAttributeCoefficients(categoryAttributeCoefficients);
-
-                actionCoefficients.put(actionKey, coefficients);
+            modelsCoefficientsNode.iterator().forEachRemaining(actionCoefficientsNode -> {
+                BanditActionCoefficients coefficients = this.parseActionCoefficientsNode(actionCoefficientsNode);
+                actionCoefficients.put(coefficients.getActionKey(), coefficients);
             });
 
             modelData.setActionCoefficients(actionCoefficients);
-            parameters.setModelData(modelData);
 
+            parameters.setModelData(modelData);
             bandits.put(banditKey, parameters);
         });
         return bandits;
+    }
+
+    private BanditActionCoefficients parseActionCoefficientsNode(JsonNode actionCoefficientsNode) {
+        String actionKey = actionCoefficientsNode.get("actionKey").asText();
+        Double intercept = actionCoefficientsNode.get("intercept").asDouble();
+
+        Map<String, BanditNumericAttributeCoefficients> numericAttributeCoefficients = new HashMap<>();
+        JsonNode numericAttributeCoefficientsNode = actionCoefficientsNode.get("numericAttributeCoefficients");
+        numericAttributeCoefficientsNode.iterator().forEachRemaining(numericAttributeCoefficientNode -> {
+            BanditNumericAttributeCoefficients currNnumericAttributeCoefficients = this.parseNumericAttributesNode(numericAttributeCoefficientNode);
+            numericAttributeCoefficients.put(currNnumericAttributeCoefficients.getAttributeKey(), currNnumericAttributeCoefficients);
+        });
+
+        Map<String, BanditCategoricalAttributeCoefficients> categoricalAttributeCoefficients = new HashMap<>();
+        JsonNode categoryAttributeCoefficientsNode = actionCoefficientsNode.get("categoryAttributeCoefficients");
+        categoryAttributeCoefficientsNode.iterator().forEachRemaining(categoryAttributeCoefficientNode -> {
+            BanditCategoricalAttributeCoefficients coefficients = this.parseCategoricalAttributesNode(categoryAttributeCoefficientNode);
+            categoricalAttributeCoefficients.put(coefficients.getAttributeKey(), coefficients);
+        });
+
+        BanditActionCoefficients coefficients = new BanditActionCoefficients();
+        coefficients.setActionKey(actionKey);
+        coefficients.setIntercept(intercept);
+        coefficients.setNumericAttributeCoefficients(numericAttributeCoefficients);
+        coefficients.setCategoricalAttributeCoefficients(categoricalAttributeCoefficients);
+        return coefficients;
+    }
+
+    private BanditNumericAttributeCoefficients parseNumericAttributesNode(JsonNode numericAttributeCoefficientNode) {
+        String attributeKey = numericAttributeCoefficientNode.get("attributeKey").asText();
+        Double coefficient = numericAttributeCoefficientNode.get("coefficient").asDouble();
+        Double missingValueCoefficient = numericAttributeCoefficientNode.get("missingValueCoefficient").asDouble();
+
+        BanditNumericAttributeCoefficients coefficients = new BanditNumericAttributeCoefficients();
+        coefficients.setAttributeKey(attributeKey);
+        coefficients.setCoefficient(coefficient);
+        coefficients.setMissingValueCoefficient(missingValueCoefficient);
+        return coefficients;
+    }
+
+    private BanditCategoricalAttributeCoefficients parseCategoricalAttributesNode(JsonNode categoricalAttributesCoefficientNode) {
+        String attributeKey = categoricalAttributesCoefficientNode.get("attributeKey").asText();
+        Double missingValueCoefficient = categoricalAttributesCoefficientNode.get("missingValueCoefficient").asDouble();
+        Map<String, Double> valueCoefficients = new HashMap<>();
+        JsonNode valuesNode = categoricalAttributesCoefficientNode.get("values");
+        valuesNode.iterator().forEachRemaining(valueNode -> {
+            String value = valueNode.get("value").asText();
+            Double coefficient = valueNode.get("coefficient").asDouble();
+            valueCoefficients.put(value, coefficient);
+        });
+
+        BanditCategoricalAttributeCoefficients coefficients = new BanditCategoricalAttributeCoefficients();
+        coefficients.setAttributeKey(attributeKey);
+        coefficients.setValueCoefficients(valueCoefficients);
+        coefficients.setMissingValueCoefficient(missingValueCoefficient);
+
+        return coefficients;
     }
 }

@@ -9,5 +9,5 @@ public class BanditActionCoefficients {
   private String actionKey;
   private Double intercept;
   private Map<String, BanditNumericAttributeCoefficients> numericAttributeCoefficients;
-  private Map<String, BanditCategoryAttributeCoefficients> categoryAttributeCoefficients;
+  private Map<String, BanditCategoricalAttributeCoefficients> categoricalAttributeCoefficients;
 }
