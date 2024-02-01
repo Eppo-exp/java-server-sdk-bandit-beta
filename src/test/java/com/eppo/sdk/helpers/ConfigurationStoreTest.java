@@ -1,5 +1,6 @@
 package com.eppo.sdk.helpers;
 
+import com.eppo.sdk.dto.BanditParameters;
 import com.eppo.sdk.dto.ExperimentConfiguration;
 import org.ehcache.Cache;
 import org.junit.jupiter.api.Assertions;
@@ -13,7 +14,13 @@ class ConfigurationStoreTest {
             Cache<String, ExperimentConfiguration> experimentConfigurationCache,
             ExperimentConfigurationRequestor requestor
     ) {
-        return new ConfigurationStore(experimentConfigurationCache, requestor);
+        return new ConfigurationStore(
+          experimentConfigurationCache,
+          requestor,
+          // This test doesn't check bandit cache
+          null,
+          null
+        );
     }
 
     Cache<String, ExperimentConfiguration> createExperimentConfigurationCache(int maxEntries) {

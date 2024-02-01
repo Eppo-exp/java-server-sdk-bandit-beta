@@ -530,16 +530,22 @@ public class EppoClient {
                 eppoClientConfig.getBaseURL(),
                 Constants.REQUEST_TIMEOUT_MILLIS);
 
-        // Create wrapper for fetching experiment configuration
+        // Create wrapper for fetching experiment and bandit configuration
         ExperimentConfigurationRequestor expConfigRequestor = new ExperimentConfigurationRequestor(eppoHttpClient);
-        // Create Caching for Experiment Configuration
+        BanditParametersRequestor banditParametersRequestor = new BanditParametersRequestor(eppoHttpClient);
+        // Create Caching for Experiment Configuration and Bandit Parameters
         CacheHelper cacheHelper = new CacheHelper();
         Cache<String, ExperimentConfiguration> experimentConfigurationCache = cacheHelper
                 .createExperimentConfigurationCache(Constants.MAX_CACHE_ENTRIES);
+        Cache<String, BanditParameters> banditParametersCache = cacheHelper
+          .createBanditParameterCache(Constants.MAX_CACHE_ENTRIES);
         // Create ExperimentConfiguration Store
         ConfigurationStore configurationStore = ConfigurationStore.init(
                 experimentConfigurationCache,
-                expConfigRequestor);
+                expConfigRequestor,
+                banditParametersCache,
+                banditParametersRequestor
+        );
 
         // Stop the polling process of any previously initialized client
         if (EppoClient.instance != null) {
