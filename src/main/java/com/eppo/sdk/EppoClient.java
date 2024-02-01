@@ -531,8 +531,10 @@ public class EppoClient {
                 Constants.REQUEST_TIMEOUT_MILLIS);
 
         // Create wrapper for fetching experiment and bandit configuration
-        ExperimentConfigurationRequestor expConfigRequestor = new ExperimentConfigurationRequestor(eppoHttpClient);
-        BanditParametersRequestor banditParametersRequestor = new BanditParametersRequestor(eppoHttpClient);
+        ConfigurationRequestor<ExperimentConfigurationResponse> expConfigRequestor =
+          new ConfigurationRequestor<>(ExperimentConfigurationResponse.class, eppoHttpClient, Constants.RAC_ENDPOINT);
+        ConfigurationRequestor<BanditParametersResponse> banditParametersRequestor =
+          new ConfigurationRequestor<>(BanditParametersResponse.class, eppoHttpClient, Constants.BANDIT_ENDPOINT);
         // Create Caching for Experiment Configuration and Bandit Parameters
         CacheHelper cacheHelper = new CacheHelper();
         Cache<String, ExperimentConfiguration> experimentConfigurationCache = cacheHelper

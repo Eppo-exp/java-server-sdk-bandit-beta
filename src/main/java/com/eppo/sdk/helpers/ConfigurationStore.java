@@ -17,15 +17,15 @@ import java.util.Optional;
 public class ConfigurationStore {
     Cache<String, ExperimentConfiguration> experimentConfigurationCache;
     Cache<String, BanditParameters> banditParametersCache;
-    ExperimentConfigurationRequestor experimentConfigurationRequestor;
-    BanditParametersRequestor banditParametersRequestor;
+    ConfigurationRequestor<ExperimentConfigurationResponse> experimentConfigurationRequestor;
+    ConfigurationRequestor<BanditParametersResponse> banditParametersRequestor;
     static ConfigurationStore instance = null;
 
     public ConfigurationStore(
             Cache<String, ExperimentConfiguration> experimentConfigurationCache,
-            ExperimentConfigurationRequestor experimentConfigurationRequestor,
+            ConfigurationRequestor<ExperimentConfigurationResponse> experimentConfigurationRequestor,
             Cache<String, BanditParameters> banditParametersCache,
-            BanditParametersRequestor banditParametersRequestor
+            ConfigurationRequestor<BanditParametersResponse> banditParametersRequestor
     ) {
         this.experimentConfigurationRequestor = experimentConfigurationRequestor;
         this.experimentConfigurationCache = experimentConfigurationCache;
@@ -35,9 +35,9 @@ public class ConfigurationStore {
 
     public final static ConfigurationStore init(
             Cache<String, ExperimentConfiguration> experimentConfigurationCache,
-            ExperimentConfigurationRequestor experimentConfigurationRequestor,
+            ConfigurationRequestor<ExperimentConfigurationResponse> experimentConfigurationRequestor,
             Cache<String, BanditParameters> banditParametersCache,
-            BanditParametersRequestor banditParametersRequestor
+            ConfigurationRequestor<BanditParametersResponse> banditParametersRequestor
     ) {
         if (ConfigurationStore.instance == null) {
             ConfigurationStore.instance = new ConfigurationStore(
@@ -97,7 +97,7 @@ public class ConfigurationStore {
      */
     public void fetchAndSetExperimentConfiguration() throws NetworkException, NetworkRequestNotAllowed {
         Optional<ExperimentConfigurationResponse> response = this.experimentConfigurationRequestor
-                .fetchExperimentConfiguration();
+                .fetchConfiguration();
 
         boolean loadBandits = false;
         if (response.isPresent()) {
@@ -119,7 +119,7 @@ public class ConfigurationStore {
         }
 
         if (loadBandits) {
-            Optional<BanditParametersResponse> banditResponse = this.banditParametersRequestor.fetchBanditParameters();
+            Optional<BanditParametersResponse> banditResponse = this.banditParametersRequestor.fetchConfiguration();
             if (banditResponse.isEmpty() || banditResponse.get().getBandits() == null) {
                 log.warn("Unexpected empty bandit parameter response");
                 return;

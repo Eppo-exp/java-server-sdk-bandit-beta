@@ -1,6 +1,5 @@
 package com.eppo.sdk.helpers;
 
-import com.eppo.sdk.dto.BanditParameters;
 import com.eppo.sdk.dto.ExperimentConfiguration;
 import org.ehcache.Cache;
 import org.junit.jupiter.api.Assertions;
@@ -12,7 +11,7 @@ class ConfigurationStoreTest {
 
     ConfigurationStore createConfigurationStore(
             Cache<String, ExperimentConfiguration> experimentConfigurationCache,
-            ExperimentConfigurationRequestor requestor
+            ConfigurationRequestor requestor
     ) {
         return new ConfigurationStore(
           experimentConfigurationCache,
@@ -33,7 +32,7 @@ class ConfigurationStoreTest {
     @Test()
     void testSetExperimentConfiguration() {
         Cache<String, ExperimentConfiguration> cache = createExperimentConfigurationCache(10);
-        ExperimentConfigurationRequestor requestor = Mockito.mock(ExperimentConfigurationRequestor.class);
+        ConfigurationRequestor requestor = Mockito.mock(ConfigurationRequestor.class);
 
         ConfigurationStore store = createConfigurationStore(cache, requestor);
         store.setExperimentConfiguration("key1", new ExperimentConfiguration());
