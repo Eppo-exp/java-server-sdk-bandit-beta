@@ -23,7 +23,7 @@ class BanditsDeserializerTest {
         assertEquals(1, responseObject.getBandits().size());
         BanditParameters parameters = responseObject.getBandits().get("banner");
         assertEquals("banner", parameters.getBanditKey());
-        assertEquals("falcon", parameters.getModel());
+        assertEquals("falcon", parameters.getModelName());
         assertEquals("v123", parameters.getModelVersion());
 
         BanditModelData modelData = parameters.getModelData();

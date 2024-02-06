@@ -39,7 +39,7 @@ public class BanditsDeserializer extends StdDeserializer<Map<String, BanditParam
             BanditParameters parameters = new BanditParameters();
             parameters.setBanditKey(banditKey);
             parameters.setUpdatedAt(updatedAt);
-            parameters.setModel(model);
+            parameters.setModelName(model);
             parameters.setModelVersion(modelVersion);
 
             BanditModelData modelData = new BanditModelData();

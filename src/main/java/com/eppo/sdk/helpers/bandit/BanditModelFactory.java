@@ -5,6 +5,8 @@ public class BanditModelFactory {
         switch(modelName) {
             case "random":
                 return new RandomBanditModel();
+            case "falcon":
+                return new FalconBanditModel();
             default:
                 throw new IllegalArgumentException("Unknown bandit model " + modelName);
         }

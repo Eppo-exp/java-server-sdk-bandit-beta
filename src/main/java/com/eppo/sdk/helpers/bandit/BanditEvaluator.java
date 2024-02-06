@@ -1,9 +1,6 @@
 package com.eppo.sdk.helpers.bandit;
 
-import com.eppo.sdk.dto.EppoAttributes;
-import com.eppo.sdk.dto.EppoValue;
-import com.eppo.sdk.dto.ShardRange;
-import com.eppo.sdk.dto.Variation;
+import com.eppo.sdk.dto.*;
 import com.eppo.sdk.helpers.Shard;
 
 import java.util.Comparator;
@@ -17,14 +14,15 @@ public class BanditEvaluator {
 
     public static List<Variation> evaluateBanditActions(
         String experimentKey,
-        String modelName,
+        BanditParameters modelParameters,
         Map<String, EppoAttributes> actions,
         String subjectKey,
         EppoAttributes subjectAttributes,
         int subjectShards
     ) {
+        String modelName = modelParameters != null ? modelParameters.getModelName() : "random";
         BanditModel model = BanditModelFactory.build(modelName);
-        Map<String, Float> actionWeights = model.weighActions(actions, subjectAttributes);
+        Map<String, Float> actionWeights = model.weighActions(modelParameters, actions, subjectAttributes);
         List<String> shuffledActions = shuffleActions(actions.keySet(), experimentKey, subjectKey);
         return generateVariations(shuffledActions, actionWeights, subjectShards);
     }
