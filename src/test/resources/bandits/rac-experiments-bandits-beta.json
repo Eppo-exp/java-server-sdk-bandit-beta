@@ -1,6 +1,6 @@
 {
   "flags": {
-    "cold-start-bandit": {
+    "cold-start-bandit-experiment": {
       "subjectShards": 10000,
       "overrides": {},
       "typedOverrides": {},
@@ -26,8 +26,8 @@
             },
             {
               "name": "bandit",
-              "value": "banner-bandit",
-              "typedValue": "banner-bandit",
+              "value": "cold-start-bandit",
+              "typedValue": "cold-start-bandit",
               "shardRange": {
                 "start": 2000,
                 "end": 10000

@@ -157,8 +157,6 @@ public class EppoClient {
         String banditKey = assignmentResult.getVariation().getTypedValue().stringValue();
         BanditParameters banditParameters = this.configurationStore.getBanditParameters(banditKey);
 
-        System.out.println(">>>> "+banditKey+" parameters >>>>>"+banditParameters);
-
         List<Variation> actionVariations = BanditEvaluator.evaluateBanditActions(
           assignmentResult.getExperimentKey(),
           banditParameters,
@@ -454,8 +452,6 @@ public class EppoClient {
             int subjectShards,
             float percentageExposure) {
         int shard = Shard.getShard("exposure-" + subjectKey + "-" + experimentKey, subjectShards);
-        System.out.println(">>>> shard "+shard);
-        System.out.println(">>>> exposure shards " + (percentageExposure * subjectShards));
         return shard <= percentageExposure * subjectShards;
     }
 
