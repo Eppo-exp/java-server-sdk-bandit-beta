@@ -23,6 +23,7 @@ public class BanditEvaluator {
         String modelName = modelParameters != null ? modelParameters.getModelName() : "random";
         BanditModel model = BanditModelFactory.build(modelName);
         Map<String, Double> actionWeights = model.weighActions(modelParameters, actions, subjectAttributes);
+        System.out.println(">>> action weights"+actionWeights);
         List<String> shuffledActions = shuffleActions(actions.keySet(), experimentKey, subjectKey);
         return generateVariations(shuffledActions, actionWeights, subjectShards);
     }

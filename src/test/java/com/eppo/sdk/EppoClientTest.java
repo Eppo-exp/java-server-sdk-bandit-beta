@@ -324,7 +324,7 @@ public class EppoClientTest {
   }
 
   @Test
-  public void testBanditModelAction() {
+  public void testBanditModelActionLogging() {
     // For now, use our special bandits RAC until we fold it into the shared test case suite
     String racResponseJson = getMockRandomizedAssignmentResponse("src/test/resources/bandits/rac-experiments-bandits-beta.json");
     this.mockServer.stubFor(
@@ -390,6 +390,108 @@ public class EppoClientTest {
     assertEquals(actionAttributes.get("adidas"), capturedBanditLog.actionAttributes);
     assertEquals(0.2042, capturedBanditLog.actionProbability, 0.0002);
     assertEquals("falcon v123", capturedBanditLog.modelVersion);
+  }
+
+  @Test
+  public void testBanditModelActionAssignmentFullContext() {
+    // For now, use our special bandits RAC until we fold it into the shared test case suite
+    String racResponseJson = getMockRandomizedAssignmentResponse("src/test/resources/bandits/rac-experiments-bandits-beta.json");
+    this.mockServer.stubFor(
+      WireMock.get(WireMock.urlMatching(".*randomized_assignment/v3/config\\?.*")).willReturn(WireMock.okJson(racResponseJson))
+    );
+    this.addBanditRacToMockServer(this.mockServer, "src/test/resources/bandits/bandits-parameters-1.json");
+
+    // Re-initialize client with our bandit RAC and a mock logger we can spy on
+    IAssignmentLogger mockAssignmentLogger = mock();
+    IBanditLogger mockBanditLogger = mock();
+    EppoClientConfig config = EppoClientConfig.builder()
+      .apiKey("mock-api-key")
+      .baseURL("http://localhost:4001")
+      .assignmentLogger(mockAssignmentLogger)
+      .banditLogger(mockBanditLogger)
+      .build();
+    EppoClient.init(config);
+
+
+    EppoAttributes subjectAttributes = new EppoAttributes(Map.of(
+      "gender_identity", EppoValue.valueOf("male"),
+      "account_age", EppoValue.valueOf(200)
+    ));
+
+    Map<String, EppoAttributes> actionAttributes = Map.of(
+      "nike", new EppoAttributes(Map.of(
+          "brand_affinity", EppoValue.valueOf(0.05),
+          "purchased_last_30_days", EppoValue.valueOf(true),
+          "loyalty_tier", EppoValue.valueOf("gold")
+        )),
+      "adidas", new EppoAttributes(Map.of(
+          "brand_affinity", EppoValue.valueOf(0.30),
+          "purchased_last_30_days", EppoValue.valueOf(true),
+          "loyalty_tier", EppoValue.valueOf("gold")
+        )),
+      "puma", new EppoAttributes(Map.of(
+          "brand_affinity", EppoValue.valueOf(1.00),
+          "purchased_last_30_days", EppoValue.valueOf(false),
+          "loyalty_tier", EppoValue.valueOf("bronze")
+        ))
+    );
+
+    // get a nike assignment
+    Optional<String> stringAssignment = EppoClient.getInstance().getStringAssignment(
+      "subject30",
+      "banner-bandit-experiment",
+      subjectAttributes,
+      actionAttributes
+    );
+
+    // Verify assignment
+    assertTrue(stringAssignment.isPresent());
+    assertEquals("adidas", stringAssignment.get());
+    ArgumentCaptor<BanditLogData> banditLogCaptor = ArgumentCaptor.forClass(BanditLogData.class);
+    verify(mockBanditLogger, times(1)).logBanditAction(banditLogCaptor.capture());
+    BanditLogData capturedBanditLog = banditLogCaptor.getValue();
+    assertEquals(0.7622, capturedBanditLog.actionProbability, 0.0002);
+  }
+
+  @Test
+  public void testBanditModelActionAssignmentNoContext() {
+    // For now, use our special bandits RAC until we fold it into the shared test case suite
+    String racResponseJson = getMockRandomizedAssignmentResponse("src/test/resources/bandits/rac-experiments-bandits-beta.json");
+    this.mockServer.stubFor(
+      WireMock.get(WireMock.urlMatching(".*randomized_assignment/v3/config\\?.*")).willReturn(WireMock.okJson(racResponseJson))
+    );
+    this.addBanditRacToMockServer(this.mockServer, "src/test/resources/bandits/bandits-parameters-1.json");
+
+    // Re-initialize client with our bandit RAC and a mock logger we can spy on
+    IAssignmentLogger mockAssignmentLogger = mock();
+    IBanditLogger mockBanditLogger = mock();
+    EppoClientConfig config = EppoClientConfig.builder()
+      .apiKey("mock-api-key")
+      .baseURL("http://localhost:4001")
+      .assignmentLogger(mockAssignmentLogger)
+      .banditLogger(mockBanditLogger)
+      .build();
+    EppoClient.init(config);
+
+
+    EppoAttributes subjectAttributes = new EppoAttributes();
+    Set<String> actions = Set.of("nike", "adidas", "puma");
+
+    // get a nike assignment
+    Optional<String> stringAssignment = EppoClient.getInstance().getStringAssignment(
+      "subject33",
+      "banner-bandit-experiment",
+      subjectAttributes,
+      actions
+    );
+
+    // Verify assignment
+    assertTrue(stringAssignment.isPresent());
+    assertEquals("puma", stringAssignment.get());
+    ArgumentCaptor<BanditLogData> banditLogCaptor = ArgumentCaptor.forClass(BanditLogData.class);
+    verify(mockBanditLogger, times(1)).logBanditAction(banditLogCaptor.capture());
+    BanditLogData capturedBanditLog = banditLogCaptor.getValue();
+    assertEquals(0.1923, capturedBanditLog.actionProbability, 0.0002);
   }
 
   @Test
