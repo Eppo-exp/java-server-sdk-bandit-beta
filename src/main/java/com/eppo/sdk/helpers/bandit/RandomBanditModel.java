@@ -8,8 +8,8 @@ import java.util.stream.Collectors;
 
 public class RandomBanditModel implements BanditModel {
 
-    public Map<String, Float> weighActions(BanditParameters parameters, Map<String, EppoAttributes> actions, EppoAttributes subjectAttributes) {
-        final float weightPerAction = 1 / (float)actions.size();
+    public Map<String, Double> weighActions(BanditParameters parameters, Map<String, EppoAttributes> actions, EppoAttributes subjectAttributes) {
+        final double weightPerAction = 1 / (double)actions.size();
         return actions.keySet().stream().collect(Collectors.toMap(
             key -> key,
             value -> weightPerAction
