@@ -265,7 +265,66 @@ public class EppoClientTest {
   }
 
   @Test
-  public void testBanditBanditAction() {
+  public void testBanditBanditColdStartAction() {
+    // For now, use our special bandits RAC until we fold it into the shared test case suite
+    String racResponseJson = getMockRandomizedAssignmentResponse("src/test/resources/bandits/rac-experiments-bandits-beta.json");
+    this.mockServer.stubFor(
+      WireMock.get(WireMock.urlMatching(".*randomized_assignment/v3/config\\?.*")).willReturn(WireMock.okJson(racResponseJson))
+    );
+    //this.addBanditRacToMockServer(this.mockServer, "src/test/resources/bandits/bandits-parameters-1.json");
+
+    // Re-initialize client with our bandit RAC and a mock logger we can spy on
+    IAssignmentLogger mockAssignmentLogger = mock();
+    IBanditLogger mockBanditLogger = mock();
+    EppoClientConfig config = EppoClientConfig.builder()
+      .apiKey("mock-api-key")
+      .baseURL("http://localhost:4001")
+      .assignmentLogger(mockAssignmentLogger)
+      .banditLogger(mockBanditLogger)
+      .build();
+    EppoClient.init(config);
+
+    Set<String> banditActions = Set.of("option1", "option2", "option3");
+
+    // Attempt to get a bandit assignment
+    Optional<String> stringAssignment = EppoClient.getInstance().getStringAssignment(
+      "subject1",
+      "cold-start-bandit",
+      new EppoAttributes(),
+      banditActions
+    );
+
+    // Verify assignment
+    assertFalse(stringAssignment.isEmpty());
+    assertTrue(banditActions.contains(stringAssignment.get()));
+
+    // Verify experiment assignment log
+    ArgumentCaptor<AssignmentLogData> assignmentLogCaptor = ArgumentCaptor.forClass(AssignmentLogData.class);
+    verify(mockAssignmentLogger, times(1)).logAssignment(assignmentLogCaptor.capture());
+    AssignmentLogData capturedAssignmentLog = assignmentLogCaptor.getValue();
+    assertEquals("cold-start-bandit-bandit", capturedAssignmentLog.experiment);
+    assertEquals("cold-start-bandit", capturedAssignmentLog.featureFlag);
+    assertEquals("bandit", capturedAssignmentLog.allocation);
+    assertEquals("banner-bandit", capturedAssignmentLog.variation);
+    assertEquals("subject1", capturedAssignmentLog.subject);
+    assertEquals(Map.of(), capturedAssignmentLog.subjectAttributes);
+
+    // Verify bandit log
+    ArgumentCaptor<BanditLogData> banditLogCaptor = ArgumentCaptor.forClass(BanditLogData.class);
+    verify(mockBanditLogger, times(1)).logBanditAction(banditLogCaptor.capture());
+    BanditLogData capturedBanditLog = banditLogCaptor.getValue();
+    assertEquals("cold-start-bandit-bandit", capturedBanditLog.experiment);
+    assertEquals("banner-bandit", capturedBanditLog.variation);
+    assertEquals("subject1", capturedBanditLog.subject);
+    assertEquals(Map.of(), capturedBanditLog.subjectAttributes);
+    assertEquals("option3", capturedBanditLog.action);
+    assertEquals(Map.of(), capturedBanditLog.actionAttributes);
+    assertEquals(0.3333, capturedBanditLog.actionProbability, 0.0002);
+    assertEquals("cold start", capturedBanditLog.modelVersion);
+  }
+
+  @Test
+  public void testBanditBanditModelAction() {
     // For now, use our special bandits RAC until we fold it into the shared test case suite
     String racResponseJson = getMockRandomizedAssignmentResponse("src/test/resources/bandits/rac-experiments-bandits-beta.json");
     this.mockServer.stubFor(
@@ -284,43 +343,53 @@ public class EppoClientTest {
       .build();
     EppoClient.init(config);
 
-    Set<String> banditActions = Set.of("option1", "option2", "option3");
 
-    // Attempt to get a bandit assignment
+    EppoAttributes subjectAttributes = new EppoAttributes(Map.of(
+      "gender_identity", EppoValue.valueOf("female"),
+      "days_since_signup", EppoValue.valueOf(130)
+    ));
+
+    Map<String, EppoAttributes> actionAttributes = Map.of(
+      "nike", new EppoAttributes(Map.of("brand_affinity", EppoValue.valueOf(0.25))),
+      "adidas", new EppoAttributes(Map.of("brand_affinity", EppoValue.valueOf(0.1))),
+      "puma", new EppoAttributes(Map.of())
+    );
+
+    // get a nike assignment
     Optional<String> stringAssignment = EppoClient.getInstance().getStringAssignment(
-      "subject1",
-      "test_bandit_1",
-      new EppoAttributes(),
-      banditActions
+      "subject2",
+      "banner-bandit-experiment",
+      subjectAttributes,
+      actionAttributes
     );
 
     // Verify assignment
     assertFalse(stringAssignment.isEmpty());
-    assertTrue(banditActions.contains(stringAssignment.get()));
+    assertEquals("adidas", stringAssignment.get());
 
     // Verify experiment assignment log
     ArgumentCaptor<AssignmentLogData> assignmentLogCaptor = ArgumentCaptor.forClass(AssignmentLogData.class);
     verify(mockAssignmentLogger, times(1)).logAssignment(assignmentLogCaptor.capture());
     AssignmentLogData capturedAssignmentLog = assignmentLogCaptor.getValue();
-    assertEquals("test_bandit_1-bandit", capturedAssignmentLog.experiment);
-    assertEquals("test_bandit_1", capturedAssignmentLog.featureFlag);
+    assertEquals("banner-bandit-experiment-bandit", capturedAssignmentLog.experiment);
+    assertEquals("banner-bandit-experiment", capturedAssignmentLog.featureFlag);
     assertEquals("bandit", capturedAssignmentLog.allocation);
     assertEquals("banner-bandit", capturedAssignmentLog.variation);
-    assertEquals("subject1", capturedAssignmentLog.subject);
-    assertEquals(Map.of(), capturedAssignmentLog.subjectAttributes);
+    assertEquals("subject2", capturedAssignmentLog.subject);
+    assertEquals(subjectAttributes, capturedAssignmentLog.subjectAttributes);
 
     // Verify bandit log
     ArgumentCaptor<BanditLogData> banditLogCaptor = ArgumentCaptor.forClass(BanditLogData.class);
     verify(mockBanditLogger, times(1)).logBanditAction(banditLogCaptor.capture());
     BanditLogData capturedBanditLog = banditLogCaptor.getValue();
-    assertEquals("test_bandit_1-bandit", capturedBanditLog.experiment);
+    assertEquals("banner-bandit-experiment-bandit", capturedBanditLog.experiment);
     assertEquals("banner-bandit", capturedBanditLog.variation);
-    assertEquals("subject1", capturedBanditLog.subject);
-    assertEquals(Map.of(), capturedBanditLog.subjectAttributes);
-    assertEquals("option3", capturedBanditLog.action);
-    assertEquals(Map.of(), capturedBanditLog.actionAttributes);
-    assertEquals(0.3333, capturedBanditLog.actionProbability, 0.0002);
-    assertEquals("random 0.1", capturedBanditLog.modelVersion);
+    assertEquals("subject2", capturedBanditLog.subject);
+    assertEquals(subjectAttributes, capturedBanditLog.subjectAttributes);
+    assertEquals("adidas", capturedBanditLog.action);
+    assertEquals(actionAttributes.get("adidas"), capturedBanditLog.actionAttributes);
+    assertEquals(0.2042, capturedBanditLog.actionProbability, 0.0002);
+    assertEquals("falcon v123", capturedBanditLog.modelVersion);
   }
 
   @Test
@@ -348,7 +417,7 @@ public class EppoClientTest {
     // Attempt to get a bandit assignment
     Optional<String> stringAssignment = EppoClient.getInstance().getStringAssignment(
             "subject8",
-            "test_bandit_1",
+            "cold-start-bandit",
             new EppoAttributes(),
             banditActions
     );
@@ -360,7 +429,7 @@ public class EppoClientTest {
     // Manually log an action
     EppoClient.getInstance().logNonBanditAction(
       "subject8",
-      "test_bandit_1",
+      "cold-start-bandit",
       new EppoAttributes(),
       "option0",
       new EppoAttributes()
@@ -370,8 +439,8 @@ public class EppoClientTest {
     ArgumentCaptor<AssignmentLogData> assignmentLogCaptor = ArgumentCaptor.forClass(AssignmentLogData.class);
     verify(mockAssignmentLogger, times(1)).logAssignment(assignmentLogCaptor.capture());
     AssignmentLogData capturedAssignmentLog = assignmentLogCaptor.getValue();
-    assertEquals("test_bandit_1-bandit", capturedAssignmentLog.experiment);
-    assertEquals("test_bandit_1", capturedAssignmentLog.featureFlag);
+    assertEquals("cold-start-bandit-bandit", capturedAssignmentLog.experiment);
+    assertEquals("cold-start-bandit", capturedAssignmentLog.featureFlag);
     assertEquals("bandit", capturedAssignmentLog.allocation);
     assertEquals("control", capturedAssignmentLog.variation);
     assertEquals("subject8", capturedAssignmentLog.subject);
@@ -381,7 +450,7 @@ public class EppoClientTest {
     ArgumentCaptor<BanditLogData> banditLogCaptor = ArgumentCaptor.forClass(BanditLogData.class);
     verify(mockBanditLogger, times(1)).logBanditAction(banditLogCaptor.capture());
     BanditLogData capturedBanditLog = banditLogCaptor.getValue();
-    assertEquals("test_bandit_1-bandit", capturedBanditLog.experiment);
+    assertEquals("cold-start-bandit-bandit", capturedBanditLog.experiment);
     assertEquals("control", capturedBanditLog.variation);
     assertEquals("subject8", capturedBanditLog.subject);
     assertEquals(Map.of(), capturedBanditLog.subjectAttributes);
@@ -414,7 +483,7 @@ public class EppoClientTest {
     // Attempt to get a bandit assignment
     Optional<String> stringAssignment = EppoClient.getInstance().getStringAssignment(
             "subject2",
-            "test_bandit_1",
+            "cold-start-bandit",
             new EppoAttributes(),
             banditActions
     );

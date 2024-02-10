@@ -14,11 +14,15 @@ public class FalconBanditModel implements BanditModel {
         Map<String, Double> actionScores = actions.entrySet().stream().collect(Collectors.toMap(
           Map.Entry::getKey,
           e -> {
+            double actionScore = 0.0;
 
             // get all coefficients known to the model
             BanditCoefficients banditCoefficients = parameters.getModelData().getCoefficients().get(e.getKey());
 
-            double actionScore = 0.0;
+            if (banditCoefficients == null) {
+              // Unknown action
+              return actionScore;
+            }
 
             for( BanditNumericAttributeCoefficients actionNumericCoefficients : banditCoefficients.getActionNumericCoefficients().values()) {
               EppoValue actionContextValue = e.getValue().get(actionNumericCoefficients.getAttributeKey());

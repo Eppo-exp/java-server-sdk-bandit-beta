@@ -123,12 +123,14 @@ public class ConfigurationStore {
         }
 
         if (loadBandits) {
+            System.out.println(">>>> loading bandits");
             Optional<BanditParametersResponse> banditResponse = this.banditParametersRequestor.fetchConfiguration();
             if (banditResponse.isEmpty() || banditResponse.get().getBandits() == null) {
                 log.warn("Unexpected empty bandit parameter response");
                 return;
             }
             for (Map.Entry<String, BanditParameters> entry : banditResponse.get().getBandits().entrySet()) {
+                System.out.println(">>>> saving bandit parameters for "+entry.getKey());
                 this.banditParametersCache.put(entry.getKey(), entry.getValue());
             }
         }

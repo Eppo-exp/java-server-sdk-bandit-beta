@@ -2,7 +2,7 @@
   "updatedAt": "2023-09-13T04:52:06.462Z",
   "bandits": [
     {
-      "banditKey": "banner",
+      "banditKey": "banner-bandit",
       "model": "falcon",
       "updatedAt": "2023-09-13T04:52:06.462Z",
       "modelVersion": "v123",

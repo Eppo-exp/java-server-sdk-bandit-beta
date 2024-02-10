@@ -21,8 +21,8 @@ class BanditsDeserializerTest {
         BanditParametersResponse responseObject = this.mapper.readValue(jsonString, BanditParametersResponse.class);
 
         assertEquals(1, responseObject.getBandits().size());
-        BanditParameters parameters = responseObject.getBandits().get("banner");
-        assertEquals("banner", parameters.getBanditKey());
+        BanditParameters parameters = responseObject.getBandits().get("banner-bandit");
+        assertEquals("banner-bandit", parameters.getBanditKey());
         assertEquals("falcon", parameters.getModelName());
         assertEquals("v123", parameters.getModelVersion());
 
