@@ -415,7 +415,7 @@ public class EppoClientTest {
 
     EppoAttributes subjectAttributes = new EppoAttributes(Map.of(
       "gender_identity", EppoValue.valueOf("male"),
-      "account_age", EppoValue.valueOf(200)
+      "account_age", EppoValue.valueOf(3)
     ));
 
     Map<String, EppoAttributes> actionAttributes = Map.of(
@@ -479,7 +479,7 @@ public class EppoClientTest {
 
     // get a nike assignment
     Optional<String> stringAssignment = EppoClient.getInstance().getStringAssignment(
-      "subject33",
+      "subject39",
       "banner-bandit-experiment",
       subjectAttributes,
       actions
@@ -491,7 +491,7 @@ public class EppoClientTest {
     ArgumentCaptor<BanditLogData> banditLogCaptor = ArgumentCaptor.forClass(BanditLogData.class);
     verify(mockBanditLogger, times(1)).logBanditAction(banditLogCaptor.capture());
     BanditLogData capturedBanditLog = banditLogCaptor.getValue();
-    assertEquals(0.1923, capturedBanditLog.actionProbability, 0.0002);
+    assertEquals(0.1613, capturedBanditLog.actionProbability, 0.0002);
   }
 
   @Test
