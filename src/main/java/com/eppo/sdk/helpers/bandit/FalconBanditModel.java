@@ -32,8 +32,6 @@ public class FalconBanditModel implements BanditModel {
                 ? actionContextValue.doubleValue() * actionNumericCoefficients.getCoefficient()
                 : actionNumericCoefficients.getMissingValueCoefficient();
 
-              System.out.printf("%s-%s scores %f\n", e.getKey(), actionNumericCoefficients.getAttributeKey(), attributeScore);
-
               actionScore += attributeScore;
             }
 
@@ -44,8 +42,6 @@ public class FalconBanditModel implements BanditModel {
                 ? actionCategoricalCoefficients.getValueCoefficients().get(actionContextValue.stringValue().trim())
                 : actionCategoricalCoefficients.getMissingValueCoefficient();
 
-              System.out.printf("%s-%s scores %s\n", e.getKey(), actionCategoricalCoefficients.getAttributeKey(), attributeScore);
-
               actionScore += attributeScore;
             }
 
@@ -54,12 +50,6 @@ public class FalconBanditModel implements BanditModel {
               double attributeScore = actionContextValue != null && actionContextValue.isNumeric()
                 ? actionContextValue.doubleValue() * subjectNumericCoefficients.getCoefficient()
                 : subjectNumericCoefficients.getMissingValueCoefficient();
-
-              System.out.println(">>>>> e "+e);
-              System.out.println(subjectNumericCoefficients.getAttributeKey()+" context value "+actionContextValue);
-              System.out.println(">>>>>> SUBJECT NC "+subjectNumericCoefficients);
-
-              System.out.printf("%s-%s scores %f\n", e.getKey(), subjectNumericCoefficients.getAttributeKey(), attributeScore);
 
               actionScore += attributeScore;
             }
@@ -71,16 +61,12 @@ public class FalconBanditModel implements BanditModel {
                 ? subjectCategoricalCoefficients.getValueCoefficients().get(actionContextValue.stringValue().trim())
                 : subjectCategoricalCoefficients.getMissingValueCoefficient();
 
-              System.out.printf("%s-%s scores %s\n", e.getKey(), subjectCategoricalCoefficients.getAttributeKey(), attributeScore);
-
               actionScore += attributeScore;
             }
 
             return actionScore;
           }
         ));
-
-        System.out.println(">>>>>> action scores >>>>>" +actionScores);
 
         // Find the action with the highest score
         Double highestScore = null;
@@ -106,7 +92,6 @@ public class FalconBanditModel implements BanditModel {
           // Compute weight and round to four decimal places
           double  unroundedProbability = 1 / (actionScores.size() + (gamma * (highestScore - actionScore.getValue())));
           double roundedProbability = Math.round(unroundedProbability * 10000d) / 10000d;
-          System.out.printf("%s -> 1 / (%d + %f * (%f - %f)) = %f (%f)\n", actionScore.getKey(), actionScores.size(), gamma, highestScore, actionScore.getValue(), unroundedProbability, roundedProbability);
           totalNonHighestWeight += roundedProbability;
 
           actionWeights.put(actionScore.getKey(), roundedProbability);
