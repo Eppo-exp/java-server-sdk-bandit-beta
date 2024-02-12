@@ -136,7 +136,7 @@ public class EppoClientTest {
         .willReturn(WireMock.okJson(banditResponseJson))
     );
 
-    // Re-initialize client with our bandit RAC and a mock logger we can spy on
+    // Initialize our client with the mock loggers we can spy on
     EppoClientConfig config = EppoClientConfig.builder()
       .apiKey("mock-api-key")
       .baseURL("http://localhost:4001")
@@ -155,7 +155,7 @@ public class EppoClientTest {
   @MethodSource("getAssignmentTestData")
   void testAssignments(AssignmentTestCase testCase) {
 
-    // These test cases rely on the currently shared non-bandit RAC
+    // These test cases rely on the currently shared non-bandit RAC so we need to re-initialize our client to use that
     String racResponseJson = getMockRandomizedAssignmentResponse("src/test/resources/rac-experiments-v3.json");
     this.mockServer.stubFor(
       WireMock.get(WireMock.urlMatching(".*randomized_assignment/v3/config\\?.*")).willReturn(WireMock.okJson(racResponseJson))
