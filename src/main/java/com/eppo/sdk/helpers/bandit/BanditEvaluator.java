@@ -20,7 +20,10 @@ public class BanditEvaluator {
         EppoAttributes subjectAttributes,
         int subjectShards
     ) {
-        String modelName = modelParameters != null ? modelParameters.getModelName() : "random";
+        String modelName = modelParameters != null
+          ? modelParameters.getModelName()
+          : RandomBanditModel.MODEL_IDENTIFIER; // Default to random model for unknown bandits
+
         BanditModel model = BanditModelFactory.build(modelName);
         Map<String, Double> actionWeights = model.weighActions(modelParameters, actions, subjectAttributes);
         List<String> shuffledActions = shuffleActions(actions.keySet(), experimentKey, subjectKey);

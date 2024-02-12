@@ -176,7 +176,7 @@ public class EppoClient {
         if (this.eppoClientConfig.getBanditLogger() != null) {
             // Do bandit-specific logging
 
-            String modelVersionToLog = "cold start"; // Default if we have not seen this bandit before
+            String modelVersionToLog = "cold start"; // Default model "version" if we have not seen this bandit before or don't have model parameters for it
             if (banditParameters != null) {
                 modelVersionToLog = banditParameters.getModelName() + " " + banditParameters.getModelVersion();
             }

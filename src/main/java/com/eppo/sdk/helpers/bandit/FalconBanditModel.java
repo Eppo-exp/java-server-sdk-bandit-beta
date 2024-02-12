@@ -8,6 +8,8 @@ import java.util.stream.Collectors;
 
 public class FalconBanditModel implements BanditModel {
 
+  public static final String MODEL_IDENTIFIER = "falcon";
+
   public Map<String, Double> weighActions(BanditParameters parameters, Map<String, EppoAttributes> actions, EppoAttributes subjectAttributes) {
 
     // For each action we need to compute its score using the model coefficients

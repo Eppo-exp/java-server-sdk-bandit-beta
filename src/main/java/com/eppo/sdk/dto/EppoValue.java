@@ -88,7 +88,6 @@ public class EppoValue {
             Double.parseDouble(value);
             return true;
         } catch (Exception e) {
-            System.out.println("EXCEPTION PARSING "+value+" "+e.getMessage());
             return false;
         }
     }
