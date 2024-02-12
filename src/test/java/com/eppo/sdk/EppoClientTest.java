@@ -335,7 +335,7 @@ public class EppoClientTest {
       "puma", new EppoAttributes(Map.of())
     );
 
-    // get a nike assignment
+    // Get our assigned action
     Optional<String> stringAssignment = EppoClient.getInstance().getStringAssignment(
       "subject2",
       "banner-bandit-experiment",
@@ -397,7 +397,7 @@ public class EppoClientTest {
         ))
     );
 
-    // get a nike assignment
+    // Get our assigned action
     Optional<String> stringAssignment = EppoClient.getInstance().getStringAssignment(
       "subject30",
       "banner-bandit-experiment",
@@ -419,7 +419,7 @@ public class EppoClientTest {
     EppoAttributes subjectAttributes = new EppoAttributes();
     Set<String> actions = Set.of("nike", "adidas", "puma");
 
-    // get a nike assignment
+    // Get our assigned action
     Optional<String> stringAssignment = EppoClient.getInstance().getStringAssignment(
       "subject39",
       "banner-bandit-experiment",
