@@ -346,7 +346,7 @@ public class EppoClientTest {
 
     EppoAttributes subjectAttributes = new EppoAttributes(Map.of(
       "gender_identity", EppoValue.valueOf("female"),
-      "days_since_signup", EppoValue.valueOf(130)
+      "days_since_signup", EppoValue.valueOf(130) // note: unused for scoring (which looks for account_age)
     ));
 
     Map<String, EppoAttributes> actionAttributes = Map.of(
@@ -388,7 +388,7 @@ public class EppoClientTest {
     assertEquals(subjectAttributes, capturedBanditLog.subjectAttributes);
     assertEquals("adidas", capturedBanditLog.action);
     assertEquals(actionAttributes.get("adidas"), capturedBanditLog.actionAttributes);
-    assertEquals(0.2042, capturedBanditLog.actionProbability, 0.0002);
+    assertEquals(0.2899, capturedBanditLog.actionProbability, 0.0002);
     assertEquals("falcon v123", capturedBanditLog.modelVersion);
   }
 
@@ -450,7 +450,7 @@ public class EppoClientTest {
     ArgumentCaptor<BanditLogData> banditLogCaptor = ArgumentCaptor.forClass(BanditLogData.class);
     verify(mockBanditLogger, times(1)).logBanditAction(banditLogCaptor.capture());
     BanditLogData capturedBanditLog = banditLogCaptor.getValue();
-    assertEquals(0.7622, capturedBanditLog.actionProbability, 0.0002);
+    assertEquals(0.8043, capturedBanditLog.actionProbability, 0.0002);
   }
 
   @Test
@@ -529,13 +529,14 @@ public class EppoClientTest {
     assertEquals("control", stringAssignment.get());
 
     // Manually log an action
-    EppoClient.getInstance().logNonBanditAction(
+    Exception banditLoggingException = EppoClient.getInstance().logNonBanditAction(
       "subject10",
       "cold-start-bandit-experiment",
       new EppoAttributes(),
       "option0",
       new EppoAttributes()
     );
+    assertNull(banditLoggingException);
 
     // Verify experiment assignment log
     ArgumentCaptor<AssignmentLogData> assignmentLogCaptor = ArgumentCaptor.forClass(AssignmentLogData.class);
