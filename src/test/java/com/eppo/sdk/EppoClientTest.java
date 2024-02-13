@@ -331,7 +331,8 @@ public class EppoClientTest {
     EppoAttributes subjectAttributes = new EppoAttributes(Map.of(
     "gender_identity", EppoValue.valueOf("female"),
     "days_since_signup", EppoValue.valueOf(130), // unused for scoring (which looks for account_age)
-    "is_premium", EppoValue.valueOf(false) // unused for scoring
+    "is_premium", EppoValue.valueOf(false), // unused for scoring
+    "unpopulated", EppoValue.valueOf() // unused for scoring
     ));
 
     Map<String, EppoAttributes> actionsWithAttributes = Map.of(
@@ -341,7 +342,8 @@ public class EppoClientTest {
       "adidas", new EppoAttributes(Map.of(
         "brand_affinity", EppoValue.valueOf(0.1),
         "num_brand_purchases", EppoValue.valueOf(5), // unused for scoring
-        "in_email_campaign", EppoValue.valueOf(true) // unused for scoring
+        "in_email_campaign", EppoValue.valueOf(true), // unused for scoring
+        "also_unpopulated", EppoValue.valueOf() // unused for scoring
       )),
       "puma", new EppoAttributes(Map.of())
     );

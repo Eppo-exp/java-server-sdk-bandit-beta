@@ -187,11 +187,10 @@ public class EppoClient {
                 actionAttributes = assignmentOptions.get(actionString);
             }
 
-            // TODO FF-1546: break out logging the attributes by numeric and categorical
-            Map<String, Double> subjectNumericAttributes = new HashMap<>();
-            Map<String, String> subjectCategoricalAttributes = new HashMap<>();
-            Map<String, Double> actionNumericAttributes = new HashMap<>();
-            Map<String, String> actionCategoricalAttributes = new HashMap<>();
+            Map<String, Double> subjectNumericAttributes = numericAttributes(assignmentResult.getSubjectAttributes());
+            Map<String, String> subjectCategoricalAttributes = categoricalAttributes(assignmentResult.getSubjectAttributes());
+            Map<String, Double> actionNumericAttributes = numericAttributes(actionAttributes);
+            Map<String, String> actionCategoricalAttributes = categoricalAttributes(actionAttributes);
 
             this.eppoClientConfig.getBanditLogger().logBanditAction(new BanditLogData(
               assignmentResult.getExperimentKey(),
@@ -208,6 +207,28 @@ public class EppoClient {
         }
 
         return Optional.of(actionValue);
+    }
+
+    private Map<String, Double> numericAttributes(EppoAttributes eppoAttributes) {
+        if (eppoAttributes == null) {
+            return Map.of();
+        }
+        return eppoAttributes.entrySet().stream().filter(e -> e.getValue().isNumeric()
+        ).collect(Collectors.toMap(
+          Map.Entry::getKey,
+          e -> e.getValue().doubleValue())
+        );
+    }
+
+    private Map<String, String> categoricalAttributes(EppoAttributes eppoAttributes) {
+        if (eppoAttributes == null) {
+            return Map.of();
+        }
+        return eppoAttributes.entrySet().stream().filter(e -> !e.getValue().isNumeric() && !e.getValue().isNull()
+        ).collect(Collectors.toMap(
+          Map.Entry::getKey,
+          e -> e.getValue().toString())
+        );
     }
 
     /**
@@ -503,11 +524,10 @@ public class EppoClient {
 
             String variationValue = assignmentResult.getVariation().getTypedValue().toString();
 
-            // TODO: FF-1546 - break out attributes
-            Map<String, Double> subjectNumericAttributes = new HashMap<>();
-            Map<String, String> subjectCategoricalAttributes = new HashMap<>();
-            Map<String, Double> actionNumericAttributes = new HashMap<>();
-            Map<String, String> actionCategoricalAttributes = new HashMap<>();
+            Map<String, Double> subjectNumericAttributes = numericAttributes(subjectAttributes);
+            Map<String, String> subjectCategoricalAttributes = categoricalAttributes(subjectAttributes);
+            Map<String, Double> actionNumericAttributes = numericAttributes(actionAttributes);
+            Map<String, String> actionCategoricalAttributes = categoricalAttributes(actionAttributes);
 
             this.eppoClientConfig.getBanditLogger().logBanditAction(new BanditLogData(
               assignmentResult.getExperimentKey(),
