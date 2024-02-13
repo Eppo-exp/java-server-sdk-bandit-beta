@@ -209,28 +209,6 @@ public class EppoClient {
         return Optional.of(actionValue);
     }
 
-    private Map<String, Double> numericAttributes(EppoAttributes eppoAttributes) {
-        if (eppoAttributes == null) {
-            return Map.of();
-        }
-        return eppoAttributes.entrySet().stream().filter(e -> e.getValue().isNumeric()
-        ).collect(Collectors.toMap(
-          Map.Entry::getKey,
-          e -> e.getValue().doubleValue())
-        );
-    }
-
-    private Map<String, String> categoricalAttributes(EppoAttributes eppoAttributes) {
-        if (eppoAttributes == null) {
-            return Map.of();
-        }
-        return eppoAttributes.entrySet().stream().filter(e -> !e.getValue().isNumeric() && !e.getValue().isNull()
-        ).collect(Collectors.toMap(
-          Map.Entry::getKey,
-          e -> e.getValue().toString())
-        );
-    }
-
     /**
      * This function will return typed assignment value
      * 
@@ -332,12 +310,12 @@ public class EppoClient {
             EppoAttributes subjectAttributes,
             Set<String> actions
     ) {
-        Map<String, EppoAttributes> actionsWithAttributes = actions.stream()
+        Map<String, EppoAttributes> actionsWithEmptyAttributes = actions.stream()
                 .collect(Collectors.toMap(
                         key -> key,
                         value -> new EppoAttributes()
                 ));
-        return this.getStringAssignment(subjectKey, flagKey, subjectAttributes, actionsWithAttributes);
+        return this.getStringAssignment(subjectKey, flagKey, subjectAttributes, actionsWithEmptyAttributes);
     }
 
     /**
@@ -546,6 +524,29 @@ public class EppoClient {
         }
         return loggingException;
     }
+
+    private Map<String, Double> numericAttributes(EppoAttributes eppoAttributes) {
+        if (eppoAttributes == null) {
+            return Map.of();
+        }
+        return eppoAttributes.entrySet().stream().filter(e -> e.getValue().isNumeric()
+        ).collect(Collectors.toMap(
+          Map.Entry::getKey,
+          e -> e.getValue().doubleValue())
+        );
+    }
+
+    private Map<String, String> categoricalAttributes(EppoAttributes eppoAttributes) {
+        if (eppoAttributes == null) {
+            return Map.of();
+        }
+        return eppoAttributes.entrySet().stream().filter(e -> !e.getValue().isNumeric() && !e.getValue().isNull()
+        ).collect(Collectors.toMap(
+          Map.Entry::getKey,
+          e -> e.getValue().toString())
+        );
+    }
+
 
     /***
      * This function is used to initialize the Eppo Client
