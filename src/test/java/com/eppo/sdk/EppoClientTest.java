@@ -155,7 +155,7 @@ public class EppoClientTest {
   @MethodSource("getAssignmentTestData")
   void testAssignments(AssignmentTestCase testCase) {
 
-    // These test cases rely on the currently shared non-bandit RAC so we need to re-initialize our client to use that
+    // These test cases rely on the currently shared non-bandit RAC, so we need to re-initialize our client to use that
     String racResponseJson = getMockRandomizedAssignmentResponse("src/test/resources/rac-experiments-v3.json");
     this.mockServer.stubFor(
       WireMock.get(WireMock.urlMatching(".*randomized_assignment/v3/config\\?.*")).willReturn(WireMock.okJson(racResponseJson))
@@ -319,7 +319,7 @@ public class EppoClientTest {
     assertEquals("option3", capturedBanditLog.action);
     assertEquals(Map.of(), capturedBanditLog.actionAttributes);
     assertEquals(0.3333, capturedBanditLog.actionProbability, 0.0002);
-    assertEquals("cold start", capturedBanditLog.modelVersion);
+    assertEquals("uninitialized", capturedBanditLog.modelVersion);
   }
 
   @Test

@@ -1,7 +1,9 @@
 package com.eppo.sdk.dto;
 
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Data
 public class BanditNumericAttributeCoefficients implements AttributeCoefficients {
   private String attributeKey;
@@ -9,6 +11,12 @@ public class BanditNumericAttributeCoefficients implements AttributeCoefficients
   private Double missingValueCoefficient;
 
   public double scoreForAttributeValue(EppoValue attributeValue) {
-    return attributeValue != null && attributeValue.isNumeric() ? coefficient * attributeValue.doubleValue() : missingValueCoefficient;
+    if (attributeValue == null || attributeValue.isNull()) {
+      return missingValueCoefficient;
+    }
+    if (!attributeValue.isNumeric()) {
+      log.warn("Unexpected categorical attribute value for attribute "+attributeKey);
+    }
+    return coefficient * attributeValue.doubleValue();
   }
 }
