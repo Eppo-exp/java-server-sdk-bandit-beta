@@ -176,7 +176,7 @@ public class EppoClient {
         if (this.eppoClientConfig.getBanditLogger() != null) {
             // Do bandit-specific logging
 
-            String modelVersionToLog = "cold start"; // Default model "version" if we have not seen this bandit before or don't have model parameters for it
+            String modelVersionToLog = "uninitialized"; // Default model "version" if we have not seen this bandit before or don't have model parameters for it
             if (banditParameters != null) {
                 modelVersionToLog = banditParameters.getModelName() + " " + banditParameters.getModelVersion();
             }
@@ -230,15 +230,19 @@ public class EppoClient {
             return Optional.empty();
         }
 
+        EppoValue eppoValue = value.get();
+
         switch (type) {
-            case BOOLEAN:
-                return Optional.of(value.get().boolValue());
             case NUMBER:
-                return Optional.of(value.get().doubleValue());
+                return Optional.of(eppoValue.doubleValue());
+            case BOOLEAN:
+                return Optional.of(eppoValue.boolValue());
+            case ARRAY_OF_STRING:
+                return Optional.of(eppoValue.arrayValue());
             case JSON_NODE:
-                return Optional.of(value.get().jsonNodeValue());
-            default:
-                return Optional.of(value.get().stringValue());
+                return Optional.of(eppoValue.jsonNodeValue());
+            default: // strings and null
+                return Optional.of(eppoValue.stringValue());
         }
     }
 

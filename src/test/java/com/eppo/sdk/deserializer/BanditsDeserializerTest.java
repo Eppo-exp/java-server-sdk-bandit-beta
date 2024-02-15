@@ -28,6 +28,8 @@ class BanditsDeserializerTest {
 
         BanditModelData modelData = parameters.getModelData();
         assertEquals(1.0, modelData.getGamma());
+        assertEquals(0.0, modelData.getDefaultActionScore());
+        assertEquals(0.0, modelData.getActionProbabilityFloor());
 
         Map<String, BanditCoefficients> coefficients = modelData.getCoefficients();
         assertEquals(2, coefficients.size());

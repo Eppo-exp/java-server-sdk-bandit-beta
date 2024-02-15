@@ -321,7 +321,7 @@ public class EppoClientTest {
     assertEquals(Map.of(), capturedBanditLog.actionNumericAttributes);
     assertEquals(Map.of(), capturedBanditLog.actionCategoricalAttributes);
     assertEquals(0.3333, capturedBanditLog.actionProbability, 0.0002);
-    assertEquals("cold start", capturedBanditLog.modelVersion);
+    assertEquals("uninitialized", capturedBanditLog.modelVersion);
   }
 
   @Test
