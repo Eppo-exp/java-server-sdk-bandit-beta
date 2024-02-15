@@ -171,7 +171,7 @@ public class EppoClient {
 
         EppoValue actionValue = selectedAction.getTypedValue();
         String actionString = actionValue.stringValue();
-        float actionProbability = VariationHelper.variationProbability(selectedAction, assignmentResult.getSubjectShards());
+        double actionProbability = VariationHelper.variationProbability(selectedAction, assignmentResult.getSubjectShards());
 
         if (this.eppoClientConfig.getBanditLogger() != null) {
             // Do bandit-specific logging
@@ -455,7 +455,7 @@ public class EppoClient {
             String subjectKey,
             String experimentKey,
             int subjectShards,
-            float percentageExposure) {
+            double percentageExposure) {
         int shard = Shard.getShard("exposure-" + subjectKey + "-" + experimentKey, subjectShards);
         return shard <= percentageExposure * subjectShards;
     }

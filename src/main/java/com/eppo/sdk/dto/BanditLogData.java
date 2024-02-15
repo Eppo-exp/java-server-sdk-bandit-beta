@@ -13,7 +13,7 @@ public class BanditLogData {
   public String variation;
   public String subject;
   public String action;
-  public Float actionProbability;
+  public Double actionProbability;
   public String modelVersion;
   public Map<String, Double> subjectNumericAttributes;
   public Map<String, String> subjectCategoricalAttributes;
@@ -25,7 +25,7 @@ public class BanditLogData {
     String variation,
     String subject,
     String action,
-    Float actionProbability,
+    Double actionProbability,
     String modelVersion,
     Map<String, Double> subjectNumericAttributes,
     Map<String, String> subjectCategoricalAttributes,
