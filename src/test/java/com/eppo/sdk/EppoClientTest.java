@@ -332,7 +332,8 @@ public class EppoClientTest {
     "gender_identity", EppoValue.valueOf("female"),
     "days_since_signup", EppoValue.valueOf(130), // unused for scoring (which looks for account_age)
     "is_premium", EppoValue.valueOf(false), // unused for scoring
-    "unpopulated", EppoValue.valueOf() // unused for scoring
+    "numeric_string", EppoValue.valueOf("123"), // unused for scoring
+    "unpopulated", EppoValue.nullValue() // unused for scoring
     ));
 
     Map<String, EppoAttributes> actionsWithAttributes = Map.of(
@@ -343,7 +344,7 @@ public class EppoClientTest {
         "brand_affinity", EppoValue.valueOf(0.1),
         "num_brand_purchases", EppoValue.valueOf(5), // unused for scoring
         "in_email_campaign", EppoValue.valueOf(true), // unused for scoring
-        "also_unpopulated", EppoValue.valueOf() // unused for scoring
+        "also_unpopulated", EppoValue.nullValue() // unused for scoring
       )),
       "puma", new EppoAttributes(Map.of())
     );
@@ -384,7 +385,8 @@ public class EppoClientTest {
     assertEquals(Map.of("days_since_signup", 130.0), capturedBanditLog.subjectNumericAttributes);
     assertEquals(Map.of(
       "gender_identity", "female",
-      "is_premium", "false"
+      "is_premium", "false",
+      "numeric_string", "123"
     ), capturedBanditLog.subjectCategoricalAttributes);
     assertEquals(Map.of(
       "brand_affinity", 0.1,

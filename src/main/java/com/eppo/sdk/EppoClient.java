@@ -471,7 +471,7 @@ public class EppoClient {
             String subjectKey,
             ExperimentConfiguration experimentConfiguration) {
         String hexedSubjectKey = Shard.getHex(subjectKey);
-        return experimentConfiguration.getTypedOverrides().getOrDefault(hexedSubjectKey, new EppoValue());
+        return experimentConfiguration.getTypedOverrides().getOrDefault(hexedSubjectKey, EppoValue.nullValue());
     }
 
     /***
