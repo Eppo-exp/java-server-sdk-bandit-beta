@@ -18,26 +18,26 @@ public class EppoValue {
     private JsonNode jsonValue;
     private List<String> stringArrayValue;
 
-    public EppoValue(String stringValue) {
+    private EppoValue(String stringValue) {
         this.stringValue = stringValue;
         this.type = stringValue != null ? EppoValueType.STRING : EppoValueType.NULL;
     }
 
-    public EppoValue(Double doubleValue) {
+    private EppoValue(Double doubleValue) {
         this.doubleValue = doubleValue;
         this.type = doubleValue != null ? EppoValueType.NUMBER : EppoValueType.NULL;
     }
-    public EppoValue(Boolean boolValue) {
+    private EppoValue(Boolean boolValue) {
         this.boolValue = boolValue;
         this.type = boolValue != null ? EppoValueType.BOOLEAN : EppoValueType.NULL;
     }
 
-    public EppoValue(List<String> stringArrayValue) {
+    private EppoValue(List<String> stringArrayValue) {
         this.stringArrayValue = stringArrayValue;
         this.type = stringArrayValue != null ? EppoValueType.ARRAY_OF_STRING : EppoValueType.NULL;
     }
 
-    public EppoValue(JsonNode jsonValue) {
+    private EppoValue(JsonNode jsonValue) {
         this.jsonValue = jsonValue;
         this.type = EppoValueType.JSON_NODE;
     }
